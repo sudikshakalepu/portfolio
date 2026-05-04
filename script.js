@@ -6,7 +6,8 @@
      4.  CAROUSEL : Project carousel prev/next with
                     proper animation reset on each advance
      5.  UI       : Hamburger menu
-     6.  INIT     : Bootstrap on window load */
+     6.  NAV      : Anchor links scroll inside #snap-wrap
+     7.  INIT     : Bootstrap on window load */
 
 
 /* 1.  P5.JS : PARTICLE BACKGROUND */
@@ -306,11 +307,32 @@ function initHamburger() {
 }
 
 
-/* 6.  INIT */
+/* 6.  NAV : Anchor links scroll inside #snap-wrap.
+   Because scroll-snap lives on the wrap div rather than
+   html/body, native href="#id" scrolls the wrong context.
+   This intercepts all hash links and scrolls the wrap
+   directly, offsetting 64px for the fixed nav bar. */
+function initNavLinks() {
+    const wrap = document.getElementById('snap-wrap');
+    if (!wrap) return;
+
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const target = document.querySelector(link.getAttribute('href'));
+            if (!target) return;
+            e.preventDefault();
+            wrap.scrollTo({ top: target.offsetTop - 64, behavior: 'smooth' });
+        });
+    });
+}
+
+
+/* 7.  INIT */
 window.addEventListener('load', () => {
     initNameInteraction();
     initCarousel();
     initHamburger();
+    initNavLinks();
     typingTimer = setTimeout(typeText, 1000);
 });
 
