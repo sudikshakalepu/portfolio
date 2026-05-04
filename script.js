@@ -7,7 +7,8 @@
                     proper animation reset on each advance
      5.  UI       : Hamburger menu
      6.  NAV      : Anchor links scroll inside #snap-wrap
-     7.  INIT     : Bootstrap on window load */
+     7.  INDICATOR: Right-side dot nav updates on scroll
+     8.  INIT     : Bootstrap on window load */
 
 
 /* 1.  P5.JS : PARTICLE BACKGROUND */
@@ -88,8 +89,8 @@ function draw() {
         dist(mouseX, mouseY, lastMouseX, lastMouseY) >= 50 &&
         millis() - lastTextChange >= 200) {
         nameEl.textContent = randomName();
-        lastMouseX = mouseX;
-        lastMouseY = mouseY;
+        lastMouseX     = mouseX;
+        lastMouseY     = mouseY;
         lastTextChange = millis();
     }
 }
@@ -151,21 +152,19 @@ function initNameInteraction() {
     const picEl  = document.getElementById("profile-pic");
     if (!nameEl || !picEl) return;
 
+    const lockName = () => {
+        isPicLocked        = true;
+        nameEl.textContent = ORIGINAL_NAME;
+    };
+
     picEl.addEventListener("mouseover", () => {
         if (!isPicLocked) { nameEl.textContent = ORIGINAL_NAME; isOnProfilePic = true; }
     });
     picEl.addEventListener("mouseout", () => {
         if (!isPicLocked) { isOnProfilePic = false; nameEl.textContent = randomName(); }
     });
-    picEl.addEventListener("click", () => {
-        isPicLocked = true;
-        nameEl.textContent = ORIGINAL_NAME;
-    });
-    picEl.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        isPicLocked = true;
-        nameEl.textContent = ORIGINAL_NAME;
-    });
+    picEl.addEventListener("click", lockName);
+    picEl.addEventListener("touchend", (e) => { e.preventDefault(); lockName(); });
 }
 
 
@@ -248,11 +247,8 @@ function initCarousel() {
             if (!featured) return;
             const content = featured.querySelector('.content');
             if (!content) return;
-
-            // Save the link href so it survives the clone
-            const clone = content.cloneNode(true);
-
             // Force a reflow before re-inserting so animation starts clean
+            const clone = content.cloneNode(true);
             content.remove();
             void featured.offsetWidth;
             featured.appendChild(clone);
@@ -327,12 +323,45 @@ function initNavLinks() {
 }
 
 
-/* 7.  INIT */
+/* 7.  INDICATOR : Update right-side dot nav on scroll.
+   Uses IntersectionObserver on each section — when a section
+   is more than 50% visible inside #snap-wrap, its dot becomes
+   active. Threshold 0.5 means the dot switches exactly when
+   the section is the dominant one on screen. */
+function initPageIndicator() {
+    const dots     = document.querySelectorAll('.indicator-dot');
+    const sections = document.querySelectorAll('section');
+    const wrap     = document.getElementById('snap-wrap');
+    if (!dots.length || !sections.length || !wrap) return;
+
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    /* Remove active from all dots, add to matching one */
+                    dots.forEach(d => d.classList.remove('active'));
+                    const dot = document.querySelector(`.indicator-dot[data-section="${entry.target.id}"]`);
+                    if (dot) dot.classList.add('active');
+                }
+            });
+        },
+        {
+            root:      wrap,   /* observe relative to the snap container */
+            threshold: 0.5     /* trigger when section is 50%+ visible */
+        }
+    );
+
+    sections.forEach(s => observer.observe(s));
+}
+
+
+/* 8.  INIT */
 window.addEventListener('load', () => {
     initNameInteraction();
     initCarousel();
     initHamburger();
     initNavLinks();
+    initPageIndicator();
     typingTimer = setTimeout(typeText, 1000);
 });
 
