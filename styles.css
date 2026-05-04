@@ -16,14 +16,24 @@
 }
 
 
-/* SCROLL SNAP
-   The three main sections snap into place like pages.
-   scroll-padding-top offsets for the fixed nav (64px). */
+/* SCROLL SNAP : removed from html, now lives on #snap-wrap.
+   A contained scrollable div gives the browser a single
+   unambiguous scroll context, fixing unreliable snapping
+   on Chrome and Safari. scroll-padding-top offsets the
+   fixed nav (64px) so sections land below it. */
 html {
-    scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
-    scroll-padding-top: 64px;
     height: 100%;
+}
+
+/* SNAP WRAP : the actual scroll + snap container */
+#snap-wrap {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-padding-top: 64px;
+    position: relative;
+    z-index: 1;
 }
 
 
@@ -878,49 +888,47 @@ section {
 }
 
 
-/* 4. CONTACT
-   Shorter than 100vh — floats at the bottom after projects. */
+/* 4. CONTACT : icon links match the nav bar social icons */
 #contact {
-    height: auto;
-    min-height: 40vh;
-    scroll-snap-align: none;
+    height: 100vh;
+    scroll-snap-align: start;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 5rem 2rem;
     border-top: 0.5px solid rgba(166, 156, 172, 0.08);
+}
+
+.contact-container {
+    text-align: center;
 }
 
 .contact-title {
     font-family: 'Economica', sans-serif;
     font-size: 3.8em;
     color: var(--cream);
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     text-align: center;
 }
 
-.contact-links {
+/* Row of logo icons — same treatment as nav social icons */
+.contact-icons {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.85rem;
+    justify-content: center;
+    gap: 2.5rem;
 }
 
-.contact-link {
-    color: var(--lavender);
-    text-decoration: none;
-    font-size: 1em;
-    transition: color 0.3s ease, letter-spacing 0.3s ease;
-    letter-spacing: 0.02em;
+.contact-icon-link img {
+    width: 40px;
+    height: 40px;
+    filter: brightness(0) invert(1);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0.85;
 }
 
-.contact-link:hover {
-    color: var(--cream);
-    letter-spacing: 0.06em;
-}
-
-.contact-container {
-    text-align: center;
+.contact-icon-link:hover img {
+    transform: translateY(-4px);
+    opacity: 1;
 }
 
 
@@ -1001,16 +1009,18 @@ section {
         font-size: 1.6em;
     }
 
-    #contact {
-        padding: 4rem 1.5rem;
-    }
-
     .contact-title {
         font-size: 2.8em;
     }
 
     .section-title {
         font-size: 2em;
+    }
+
+    /* Contact icons slightly smaller on mobile */
+    .contact-icon-link img {
+        width: 32px;
+        height: 32px;
     }
 }
 
