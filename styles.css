@@ -1,6 +1,5 @@
-/* IMPORTS */
-@import url('https://fonts.googleapis.com/css2?family=Economica:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+/* IMPORTS : combined into one request */
+@import url('https://fonts.googleapis.com/css2?family=Economica:wght@400;700&family=Fira+Code:wght@300;400;500;600;700&display=swap');
 
 
 /* VARIABLES */
@@ -22,7 +21,6 @@
    on Chrome and Safari. scroll-padding-top offsets the
    fixed nav (64px) so sections land below it. */
 html {
-    scroll-behavior: smooth;
     height: 100%;
 }
 
@@ -32,8 +30,7 @@ html {
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
     scroll-padding-top: 64px;
-    position: relative;
-    z-index: 1;
+    scroll-behavior: smooth;
 }
 
 
@@ -192,13 +189,78 @@ body {
 }
 
 
+/* PAGE INDICATOR : fixed right-side dot nav.
+   Four dots, one per section. JS adds .active on scroll.
+   Active dot is taller (pill shape) to signal current position.
+   Labels appear on hover via CSS tooltip using ::before. */
+.page-indicator {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.indicator-dot {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(166, 156, 172, 0.35);
+    border: 1px solid rgba(166, 156, 172, 0.2);
+    text-decoration: none;
+    transition: height 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+    position: relative;
+}
+
+/* Active dot : expands to pill, glows */
+.indicator-dot.active {
+    height: 26px;
+    background: var(--cream);
+    box-shadow: 0 0 10px rgba(241, 218, 196, 0.6),
+                0 0 20px rgba(241, 218, 196, 0.3);
+}
+
+/* Tooltip label : appears to the left of the dot on hover */
+.indicator-dot::before {
+    content: attr(aria-label);
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
+    color: var(--lavender);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    letter-spacing: 0.05em;
+}
+
+.indicator-dot:hover::before {
+    opacity: 1;
+}
+
+.indicator-dot:hover {
+    background: rgba(241, 218, 196, 0.6);
+}
+
+
 /* SHARED SECTION STYLES
-   Each snapping section fills the full viewport height. */
+   Each snapping section fills the full viewport height.
+   scroll-snap-stop: always forces the snap to stop at
+   every section — prevents fast scrolling from skipping. */
 section {
     position: relative;
     z-index: 1;
     height: 100vh;
     scroll-snap-align: start;
+    scroll-snap-stop: always;
 }
 
 .section-title {
@@ -245,16 +307,25 @@ section {
     font-weight: bold;
 }
 
+/* PFP : rounded-rectangle matching the carousel card style.
+   border-radius: 16px mirrors .slide .item border-radius.
+   Larger than before (260px) and clipped to a tall rect
+   with object-fit to match the card aspect ratio feel. */
 .profile-pic {
-    width: 220px;
-    height: auto;
+    width: 200px;
+    height: 260px;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 16px;
     cursor: pointer;
     display: block;
-    transition: transform 0.3s ease;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .profile-pic:hover {
-    transform: scale(1.05);
+    transform: scale(1.04);
+    box-shadow: 0 28px 56px rgba(0, 0, 0, 0.7);
 }
 
 
@@ -264,24 +335,19 @@ section {
      #skills           → 100vh clip container
      .skills-overlay-title → centred title above stars
      .night            → fills full section, rotateZ(45deg)
-     .shooting_star    → animated comet (bigger than before)
+     .shooting_star    → animated comet (bigger + brighter)
      .skill-label      → counter-rotated -45deg text
    
-   Star sizing: ~60% larger than original
-     height: 3px  (was 2px)
-     tail:   160px (was 100px)
-     travel: 450px (was 300px)
-     shine:  45px  (was 30px)
-   
-   Star spread: positions span ±350px vertically and
-   much wider horizontally to fill the full viewport. */
+   Star sizing: further increased for more impact
+     height: 4px   (was 3px)
+     tail:   200px (was 160px)
+     travel: 550px (was 450px)
+     shine:  60px  (was 45px)
+   Glow: triple drop-shadow layers for max brightness */
 #skills {
     position: relative;
     width: 100%;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .skills-overlay-title {
@@ -315,12 +381,16 @@ section {
     position: absolute;
     left: 50%;
     top: 50%;
-    height: 3px;
+    height: 4px;
     background: linear-gradient(-45deg, var(--star-blue), var(--star-fade));
     border-radius: 999px;
-    filter: drop-shadow(0 0 12px rgba(105, 155, 255, 1)) drop-shadow(0 0 4px rgba(105, 155, 255, 0.8));
+    /* Triple glow layers — core, mid, outer halo */
+    filter:
+        drop-shadow(0 0 4px  rgba(180, 210, 255, 1))
+        drop-shadow(0 0 12px rgba(105, 155, 255, 1))
+        drop-shadow(0 0 28px rgba(80,  130, 255, 0.7));
     animation:
-        tail var(--shooting-time) ease-in-out infinite,
+        tail     var(--shooting-time) ease-in-out infinite,
         shooting var(--shooting-time) ease-in-out infinite;
 }
 
@@ -328,9 +398,9 @@ section {
 .shooting_star::after {
     content: '';
     position: absolute;
-    top: calc(50% - 1.5px);
+    top: calc(50% - 2px);
     right: 0;
-    height: 3px;
+    height: 4px;
     background: linear-gradient(-45deg, var(--star-fade), var(--star-blue), var(--star-fade));
     border-radius: 100%;
     animation: shining var(--shooting-time) ease-in-out infinite;
@@ -344,23 +414,25 @@ section {
     transform: translateX(50%) rotateZ(-45deg);
 }
 
-/* Skill name — counter-rotated so it reads horizontally */
+/* Skill name — counter-rotated so it reads horizontally.
+   Font size up, stronger glow, slightly larger offset. */
 .skill-label {
     position: absolute;
     left: 0;
-    top: -26px;
+    top: -30px;
     font-family: 'Fira Code', monospace;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
-    color: rgba(140, 180, 255, 1);
+    color: rgba(200, 220, 255, 1);
     white-space: nowrap;
     transform: rotateZ(-45deg);
     transform-origin: left bottom;
     text-shadow:
-        0 0 10px rgba(95, 145, 255, 0.9),
-        0 0 20px rgba(95, 145, 255, 0.6),
-        0 0 40px rgba(95, 145, 255, 0.3);
-    letter-spacing: 0.06em;
+        0 0 8px  rgba(140, 180, 255, 1),
+        0 0 18px rgba(95,  145, 255, 0.9),
+        0 0 36px rgba(80,  130, 255, 0.6),
+        0 0 60px rgba(60,  110, 255, 0.3);
+    letter-spacing: 0.07em;
     animation: label-fade var(--shooting-time) ease-in-out infinite;
     pointer-events: none;
 }
@@ -370,315 +442,90 @@ section {
    Positions are spread across ±350px vertically and
    a wider horizontal range to fill the full viewport.
 ────────────────────────────────────────────────────── */
-.shooting_star:nth-child(1) {
-    top: calc(50% + 183px);
-    left: calc(50% - 441px);
-    animation-delay: 2341ms;
-}
+.shooting_star:nth-child(1)  { top: calc(50% + 183px); left: calc(50% - 441px); animation-delay: 2341ms; }
+.shooting_star:nth-child(1)::before, .shooting_star:nth-child(1)::after, .shooting_star:nth-child(1) .skill-label { animation-delay: 2341ms; }
 
-.shooting_star:nth-child(1)::before,
-.shooting_star:nth-child(1)::after,
-.shooting_star:nth-child(1) .skill-label {
-    animation-delay: 2341ms;
-}
+.shooting_star:nth-child(2)  { top: calc(50% - 327px); left: calc(50% - 67px);  animation-delay: 7183ms; }
+.shooting_star:nth-child(2)::before, .shooting_star:nth-child(2)::after, .shooting_star:nth-child(2) .skill-label { animation-delay: 7183ms; }
 
-.shooting_star:nth-child(2) {
-    top: calc(50% - 327px);
-    left: calc(50% - 67px);
-    animation-delay: 7183ms;
-}
+.shooting_star:nth-child(3)  { top: calc(50% + 247px); left: calc(50% - 289px); animation-delay: 4521ms; }
+.shooting_star:nth-child(3)::before, .shooting_star:nth-child(3)::after, .shooting_star:nth-child(3) .skill-label { animation-delay: 4521ms; }
 
-.shooting_star:nth-child(2)::before,
-.shooting_star:nth-child(2)::after,
-.shooting_star:nth-child(2) .skill-label {
-    animation-delay: 7183ms;
-}
+.shooting_star:nth-child(4)  { top: calc(50% - 293px); left: calc(50% + 134px); animation-delay: 1089ms; }
+.shooting_star:nth-child(4)::before, .shooting_star:nth-child(4)::after, .shooting_star:nth-child(4) .skill-label { animation-delay: 1089ms; }
 
-.shooting_star:nth-child(3) {
-    top: calc(50% + 247px);
-    left: calc(50% - 289px);
-    animation-delay: 4521ms;
-}
+.shooting_star:nth-child(5)  { top: calc(50% + 356px); left: calc(50% - 478px); animation-delay: 8934ms; }
+.shooting_star:nth-child(5)::before, .shooting_star:nth-child(5)::after, .shooting_star:nth-child(5) .skill-label { animation-delay: 8934ms; }
 
-.shooting_star:nth-child(3)::before,
-.shooting_star:nth-child(3)::after,
-.shooting_star:nth-child(3) .skill-label {
-    animation-delay: 4521ms;
-}
+.shooting_star:nth-child(6)  { top: calc(50% - 71px);  left: calc(50% - 545px); animation-delay: 3467ms; }
+.shooting_star:nth-child(6)::before, .shooting_star:nth-child(6)::after, .shooting_star:nth-child(6) .skill-label { animation-delay: 3467ms; }
 
-.shooting_star:nth-child(4) {
-    top: calc(50% - 293px);
-    left: calc(50% + 134px);
-    animation-delay: 1089ms;
-}
+.shooting_star:nth-child(7)  { top: calc(50% + 312px); left: calc(50% - 156px); animation-delay: 6789ms; }
+.shooting_star:nth-child(7)::before, .shooting_star:nth-child(7)::after, .shooting_star:nth-child(7) .skill-label { animation-delay: 6789ms; }
 
-.shooting_star:nth-child(4)::before,
-.shooting_star:nth-child(4)::after,
-.shooting_star:nth-child(4) .skill-label {
-    animation-delay: 1089ms;
-}
+.shooting_star:nth-child(8)  { top: calc(50% - 234px); left: calc(50% - 423px); animation-delay: 234ms;  }
+.shooting_star:nth-child(8)::before, .shooting_star:nth-child(8)::after, .shooting_star:nth-child(8) .skill-label { animation-delay: 234ms; }
 
-.shooting_star:nth-child(5) {
-    top: calc(50% + 356px);
-    left: calc(50% - 478px);
-    animation-delay: 8934ms;
-}
+.shooting_star:nth-child(9)  { top: calc(50% + 289px); left: calc(50% + 12px);  animation-delay: 5678ms; }
+.shooting_star:nth-child(9)::before, .shooting_star:nth-child(9)::after, .shooting_star:nth-child(9) .skill-label { animation-delay: 5678ms; }
 
-.shooting_star:nth-child(5)::before,
-.shooting_star:nth-child(5)::after,
-.shooting_star:nth-child(5) .skill-label {
-    animation-delay: 8934ms;
-}
+.shooting_star:nth-child(10) { top: calc(50% - 345px); left: calc(50% - 267px); animation-delay: 2890ms; }
+.shooting_star:nth-child(10)::before, .shooting_star:nth-child(10)::after, .shooting_star:nth-child(10) .skill-label { animation-delay: 2890ms; }
 
-.shooting_star:nth-child(6) {
-    top: calc(50% - 71px);
-    left: calc(50% - 545px);
-    animation-delay: 3467ms;
-}
+.shooting_star:nth-child(11) { top: calc(50% + 123px); left: calc(50% - 589px); animation-delay: 7456ms; }
+.shooting_star:nth-child(11)::before, .shooting_star:nth-child(11)::after, .shooting_star:nth-child(11) .skill-label { animation-delay: 7456ms; }
 
-.shooting_star:nth-child(6)::before,
-.shooting_star:nth-child(6)::after,
-.shooting_star:nth-child(6) .skill-label {
-    animation-delay: 3467ms;
-}
+.shooting_star:nth-child(12) { top: calc(50% - 278px); left: calc(50% + 78px);  animation-delay: 1234ms; }
+.shooting_star:nth-child(12)::before, .shooting_star:nth-child(12)::after, .shooting_star:nth-child(12) .skill-label { animation-delay: 1234ms; }
 
-.shooting_star:nth-child(7) {
-    top: calc(50% + 312px);
-    left: calc(50% - 156px);
-    animation-delay: 6789ms;
-}
+.shooting_star:nth-child(13) { top: calc(50% + 167px); left: calc(50% + 134px); animation-delay: 9012ms; }
+.shooting_star:nth-child(13)::before, .shooting_star:nth-child(13)::after, .shooting_star:nth-child(13) .skill-label { animation-delay: 9012ms; }
 
-.shooting_star:nth-child(7)::before,
-.shooting_star:nth-child(7)::after,
-.shooting_star:nth-child(7) .skill-label {
-    animation-delay: 6789ms;
-}
+.shooting_star:nth-child(14) { top: calc(50% - 189px); left: calc(50% - 501px); animation-delay: 4321ms; }
+.shooting_star:nth-child(14)::before, .shooting_star:nth-child(14)::after, .shooting_star:nth-child(14) .skill-label { animation-delay: 4321ms; }
 
-.shooting_star:nth-child(8) {
-    top: calc(50% - 234px);
-    left: calc(50% - 423px);
-    animation-delay: 234ms;
-}
+.shooting_star:nth-child(15) { top: calc(50% + 334px); left: calc(50% - 323px); animation-delay: 6543ms; }
+.shooting_star:nth-child(15)::before, .shooting_star:nth-child(15)::after, .shooting_star:nth-child(15) .skill-label { animation-delay: 6543ms; }
 
-.shooting_star:nth-child(8)::before,
-.shooting_star:nth-child(8)::after,
-.shooting_star:nth-child(8) .skill-label {
-    animation-delay: 234ms;
-}
+.shooting_star:nth-child(16) { top: calc(50% - 312px); left: calc(50% - 156px); animation-delay: 876ms;  }
+.shooting_star:nth-child(16)::before, .shooting_star:nth-child(16)::after, .shooting_star:nth-child(16) .skill-label { animation-delay: 876ms; }
 
-.shooting_star:nth-child(9) {
-    top: calc(50% + 289px);
-    left: calc(50% + 12px);
-    animation-delay: 5678ms;
-}
+.shooting_star:nth-child(17) { top: calc(50% + 67px);  left: calc(50% - 489px); animation-delay: 3210ms; }
+.shooting_star:nth-child(17)::before, .shooting_star:nth-child(17)::after, .shooting_star:nth-child(17) .skill-label { animation-delay: 3210ms; }
 
-.shooting_star:nth-child(9)::before,
-.shooting_star:nth-child(9)::after,
-.shooting_star:nth-child(9) .skill-label {
-    animation-delay: 5678ms;
-}
+.shooting_star:nth-child(18) { top: calc(50% - 356px); left: calc(50% - 378px); animation-delay: 8765ms; }
+.shooting_star:nth-child(18)::before, .shooting_star:nth-child(18)::after, .shooting_star:nth-child(18) .skill-label { animation-delay: 8765ms; }
 
-.shooting_star:nth-child(10) {
-    top: calc(50% - 345px);
-    left: calc(50% - 267px);
-    animation-delay: 2890ms;
-}
+.shooting_star:nth-child(19) { top: calc(50% + 45px);  left: calc(50% + 55px);  animation-delay: 5432ms; }
+.shooting_star:nth-child(19)::before, .shooting_star:nth-child(19)::after, .shooting_star:nth-child(19) .skill-label { animation-delay: 5432ms; }
 
-.shooting_star:nth-child(10)::before,
-.shooting_star:nth-child(10)::after,
-.shooting_star:nth-child(10) .skill-label {
-    animation-delay: 2890ms;
-}
-
-.shooting_star:nth-child(11) {
-    top: calc(50% + 123px);
-    left: calc(50% - 589px);
-    animation-delay: 7456ms;
-}
-
-.shooting_star:nth-child(11)::before,
-.shooting_star:nth-child(11)::after,
-.shooting_star:nth-child(11) .skill-label {
-    animation-delay: 7456ms;
-}
-
-.shooting_star:nth-child(12) {
-    top: calc(50% - 278px);
-    left: calc(50% + 78px);
-    animation-delay: 1234ms;
-}
-
-.shooting_star:nth-child(12)::before,
-.shooting_star:nth-child(12)::after,
-.shooting_star:nth-child(12) .skill-label {
-    animation-delay: 1234ms;
-}
-
-.shooting_star:nth-child(13) {
-    top: calc(50% + 167px);
-    left: calc(50% + 134px);
-    animation-delay: 9012ms;
-}
-
-.shooting_star:nth-child(13)::before,
-.shooting_star:nth-child(13)::after,
-.shooting_star:nth-child(13) .skill-label {
-    animation-delay: 9012ms;
-}
-
-.shooting_star:nth-child(14) {
-    top: calc(50% - 189px);
-    left: calc(50% - 501px);
-    animation-delay: 4321ms;
-}
-
-.shooting_star:nth-child(14)::before,
-.shooting_star:nth-child(14)::after,
-.shooting_star:nth-child(14) .skill-label {
-    animation-delay: 4321ms;
-}
-
-.shooting_star:nth-child(15) {
-    top: calc(50% + 334px);
-    left: calc(50% - 323px);
-    animation-delay: 6543ms;
-}
-
-.shooting_star:nth-child(15)::before,
-.shooting_star:nth-child(15)::after,
-.shooting_star:nth-child(15) .skill-label {
-    animation-delay: 6543ms;
-}
-
-.shooting_star:nth-child(16) {
-    top: calc(50% - 312px);
-    left: calc(50% - 156px);
-    animation-delay: 876ms;
-}
-
-.shooting_star:nth-child(16)::before,
-.shooting_star:nth-child(16)::after,
-.shooting_star:nth-child(16) .skill-label {
-    animation-delay: 876ms;
-}
-
-.shooting_star:nth-child(17) {
-    top: calc(50% + 67px);
-    left: calc(50% - 489px);
-    animation-delay: 3210ms;
-}
-
-.shooting_star:nth-child(17)::before,
-.shooting_star:nth-child(17)::after,
-.shooting_star:nth-child(17) .skill-label {
-    animation-delay: 3210ms;
-}
-
-.shooting_star:nth-child(18) {
-    top: calc(50% - 356px);
-    left: calc(50% - 378px);
-    animation-delay: 8765ms;
-}
-
-.shooting_star:nth-child(18)::before,
-.shooting_star:nth-child(18)::after,
-.shooting_star:nth-child(18) .skill-label {
-    animation-delay: 8765ms;
-}
-
-.shooting_star:nth-child(19) {
-    top: calc(50% + 45px);
-    left: calc(50% + 55px);
-    animation-delay: 5432ms;
-}
-
-.shooting_star:nth-child(19)::before,
-.shooting_star:nth-child(19)::after,
-.shooting_star:nth-child(19) .skill-label {
-    animation-delay: 5432ms;
-}
-
-.shooting_star:nth-child(20) {
-    top: calc(50% - 67px);
-    left: calc(50% - 234px);
-    animation-delay: 2109ms;
-}
-
-.shooting_star:nth-child(20)::before,
-.shooting_star:nth-child(20)::after,
-.shooting_star:nth-child(20) .skill-label {
-    animation-delay: 2109ms;
-}
+.shooting_star:nth-child(20) { top: calc(50% - 67px);  left: calc(50% - 234px); animation-delay: 2109ms; }
+.shooting_star:nth-child(20)::before, .shooting_star:nth-child(20)::after, .shooting_star:nth-child(20) .skill-label { animation-delay: 2109ms; }
 
 /* ──────────────────────────────────────────────────────
-   Keyframes — sizes scaled up from original
+   Keyframes — sizes scaled up for brightness/impact
 ────────────────────────────────────────────────────── */
 @keyframes tail {
-    0% {
-        width: 0;
-    }
-
-    30% {
-        width: 160px;
-    }
-
-    /* was 100px */
-    100% {
-        width: 0;
-    }
+    0%   { width: 0; }
+    30%  { width: 200px; }
+    100% { width: 0; }
 }
 
 @keyframes shining {
-    0% {
-        width: 0;
-    }
-
-    50% {
-        width: 45px;
-    }
-
-    /* was 30px */
-    100% {
-        width: 0;
-    }
+    0%   { width: 0; }
+    50%  { width: 60px; }
+    100% { width: 0; }
 }
 
 @keyframes shooting {
-    0% {
-        transform: translateX(0);
-    }
-
-    100% {
-        transform: translateX(450px);
-    }
-
-    /* was 300px */
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(550px); }
 }
 
 @keyframes label-fade {
-    0% {
-        opacity: 0;
-    }
-
-    15% {
-        opacity: 0;
-    }
-
-    30% {
-        opacity: 1;
-    }
-
-    70% {
-        opacity: 1;
-    }
-
-    85% {
-        opacity: 0;
-    }
-
-    100% {
-        opacity: 0;
-    }
+    0%, 15%  { opacity: 0; }
+    30%, 70% { opacity: 1; }
+    85%, 100%{ opacity: 0; }
 }
 
 
@@ -691,7 +538,6 @@ section {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0;
     gap: 1.5rem;
 }
 
@@ -713,13 +559,13 @@ section {
     height: 100%;
 }
 
-/* Every card */
+/* Every card : thumbnail size by default */
 .slide .item {
-    width: 200px;
-    height: 300px;
     position: absolute;
     top: 50%;
     transform: translate(0, -50%);
+    width: 150px;
+    height: 230px;
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
     background-position: center;
@@ -740,23 +586,11 @@ section {
     height: 100%;
 }
 
-/* Thumbnail strip */
-.slide .item:nth-child(3) {
-    left: 50%;
-}
-
-.slide .item:nth-child(4) {
-    left: calc(50% + 220px);
-}
-
-.slide .item:nth-child(5) {
-    left: calc(50% + 440px);
-}
-
-.slide .item:nth-child(n + 6) {
-    left: calc(50% + 660px);
-    opacity: 0;
-}
+/* Thumbnail strip : tighter spacing to match smaller cards */
+.slide .item:nth-child(3) { left: 52%; }
+.slide .item:nth-child(4) { left: calc(52% + 165px); }
+.slide .item:nth-child(5) { left: calc(52% + 330px); }
+.slide .item:nth-child(n + 6) { left: calc(52% + 495px); opacity: 0; }
 
 /* Dark left-to-right gradient overlay on ALL items — makes
    text readable on the featured card, looks fine on thumbnails */
@@ -765,9 +599,9 @@ section {
     position: absolute;
     inset: 0;
     background: linear-gradient(to right,
-            rgba(13, 12, 29, 0.90) 0%,
-            rgba(13, 12, 29, 0.55) 45%,
-            rgba(13, 12, 29, 0.10) 100%);
+        rgba(13, 12, 29, 0.90) 0%,
+        rgba(13, 12, 29, 0.55) 45%,
+        rgba(13, 12, 29, 0.10) 100%);
     border-radius: inherit;
     pointer-events: none;
     z-index: 0;
@@ -879,7 +713,6 @@ section {
         transform: translate(0, 40px);
         filter: blur(6px);
     }
-
     to {
         opacity: 1;
         transform: translate(0, 0);
@@ -888,10 +721,9 @@ section {
 }
 
 
-/* 4. CONTACT : icon links match the nav bar social icons */
+/* 4. CONTACT : icon links match the nav bar social icons.
+   height/scroll-snap-align/scroll-snap-stop inherited from section. */
 #contact {
-    height: 100vh;
-    scroll-snap-align: start;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -907,7 +739,6 @@ section {
     font-size: 3.8em;
     color: var(--cream);
     margin-bottom: 2.5rem;
-    text-align: center;
 }
 
 /* Row of logo icons — same treatment as nav social icons */
@@ -934,121 +765,54 @@ section {
 
 /* RESPONSIVE — tablet */
 @media (max-width: 1024px) {
-    .carousel-container {
-        height: min(480px, 65vh);
-    }
-
-    .content .name {
-        font-size: 2em;
-    }
+    .carousel-container { height: min(480px, 65vh); }
+    .content .name { font-size: 2em; }
 }
 
 
 /* RESPONSIVE — mobile */
 @media (max-width: 768px) {
-    .nav-links {
-        display: none;
-    }
+    .nav-links    { display: none; }
+    .social-icons { display: none; }
+    .hamburger    { display: flex; }
+    #main-nav     { padding: 0 20px; }
 
-    .social-icons {
-        display: none;
-    }
+    .intro h1    { font-size: 2.2em; }
+    .intro p     { font-size: 1em; }
 
-    .hamburger {
-        display: flex;
-    }
+    /* PFP slightly smaller on mobile but keeps rect shape */
+    .profile-pic { width: 150px; height: 200px; }
 
-    #main-nav {
-        padding: 0 20px;
-    }
+    .skills-overlay-title { font-size: 2em; }
 
-    .intro h1 {
-        font-size: 2.2em;
-    }
+    /* Page indicator : move closer to edge on mobile */
+    .page-indicator { right: 12px; }
 
-    .intro p {
-        font-size: 1em;
-    }
+    .carousel-container { height: min(440px, 62vh); }
 
-    .profile-pic {
-        width: 160px;
-    }
+    /* Thumbnail size on mobile */
+    .slide .item { width: 120px; height: 190px; }
 
-    .skills-overlay-title {
-        font-size: 2em;
-    }
+    /* Thumbnail positions on mobile — no need to repeat width/height */
+    .slide .item:nth-child(3) { left: 55%; }
+    .slide .item:nth-child(4) { left: calc(55% + 130px); }
+    .slide .item:nth-child(5) { left: calc(55% + 260px); opacity: 0; }
 
-    /* Carousel on mobile: tighter thumbnails */
-    .carousel-container {
-        height: min(440px, 62vh);
-    }
+    .item .content { left: 24px; width: calc(52% - 24px); }
+    .content .name { font-size: 1.6em; }
 
-    .slide .item:nth-child(3) {
-        left: 55%;
-        width: 160px;
-        height: 240px;
-    }
-
-    .slide .item:nth-child(4) {
-        left: calc(55% + 170px);
-        width: 160px;
-        height: 240px;
-    }
-
-    .slide .item:nth-child(5) {
-        left: calc(55% + 340px);
-        opacity: 0;
-    }
-
-    .item .content {
-        left: 24px;
-        width: calc(52% - 24px);
-    }
-
-    .content .name {
-        font-size: 1.6em;
-    }
-
-    .contact-title {
-        font-size: 2.8em;
-    }
-
-    .section-title {
-        font-size: 2em;
-    }
-
-    /* Contact icons slightly smaller on mobile */
-    .contact-icon-link img {
-        width: 32px;
-        height: 32px;
-    }
+    .contact-title  { font-size: 2.8em; }
+    .section-title  { font-size: 2em; }
+    .contact-icon-link img { width: 32px; height: 32px; }
 }
 
 
 /* RESPONSIVE — small phones */
 @media (max-width: 480px) {
-    .intro h1 {
-        font-size: 1.7em;
-    }
-
-    .profile-pic {
-        width: 130px;
-    }
-
-    .contact-title {
-        font-size: 2.2em;
-    }
-
-    .carousel-container {
-        height: min(400px, 58vh);
-    }
-
-    .content .name {
-        font-size: 1.4em;
-    }
-
-    .item .content {
-        left: 16px;
-        width: calc(60% - 16px);
-    }
+    .intro h1      { font-size: 1.7em; }
+    .profile-pic   { width: 130px; height: 170px; }
+    .contact-title { font-size: 2.2em; }
+    .carousel-container { height: min(400px, 58vh); }
+    .content .name { font-size: 1.4em; }
+    .item .content { left: 16px; width: calc(60% - 16px); }
 }
