@@ -54,7 +54,7 @@ function setup() {
     const container = document.getElementById('p5-container');
     let canvas      = createCanvas(window.innerWidth, window.innerHeight);
     canvas.parent(container);
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 250; i++) {
         particles.push(new Particle(random(width), random(height)));
     }
 }
