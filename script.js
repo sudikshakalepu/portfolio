@@ -11,29 +11,84 @@
      8.  INIT     : Bootstrap on window load */
 
 
-/* 1.  P5.JS : PARTICLE BACKGROUND */
+/* 1.  P5.JS : PARTICLE BACKGROUND
+
+   Two distinct modes controlled by isPicLocked:
+
+   PRE-CLICK (isPicLocked = false) — referenced code style:
+     - Linear vx/vy motion, wall-bounce on edges
+     - First particle tracks mouse
+     - Connections drawn between nearby particles that are also
+       near the mouse, fading toward the edge of CONNECT_RADIUS
+
+   POST-CLICK (isPicLocked = true) — original Perlin noise style:
+     - Each particle drifts via Perlin noise from a base position
+     - Ambient random lines between any two particles within 80px
+     - Mouse-proximity connections via particleConns Map
+
+   Each Particle stores properties for both modes.
+   On click, base is snapped to current pos so Perlin noise
+   begins drifting from exactly where the particle is at that
+   moment — no visual jump. */
 
 let particles      = [];
 let lastMouseX     = -1;
 let lastMouseY     = -1;
 let lastTextChange = 0;
-let lastConnTime   = 0;
 let isOnProfilePic = false;
 let isPicLocked    = false;
-let particleConns  = new Map();
+let wasPicLocked   = false;   /* tracks transition to trigger base snap */
+
+/* Post-click connection state — restored from original */
+let particleConns = new Map();
+let lastConnTime  = 0;
 
 const ORIGINAL_NAME = "Sudiksha";
 const RANDOM_CHARS  = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
+
+/* Pre-click connection thresholds — referenced code style */
+const CONNECT_DIST   = 80;
+const CONNECT_RADIUS = 260;
 
 function setup() {
     const container = document.getElementById('p5-container');
     let canvas      = createCanvas(window.innerWidth, window.innerHeight);
     canvas.parent(container);
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 200; i++) {
         particles.push(new Particle(random(width), random(height)));
     }
 }
 
+/* PRE-CLICK : draw connections between nearby particles near mouse */
+function drawConnectionsNew() {
+    for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+            const a = particles[i];
+            const b = particles[j];
+
+            /* 1. Are the two particles close to each other? */
+            const dx = a.pos.x - b.pos.x;
+            const dy = a.pos.y - b.pos.y;
+            if (abs(dx) >= CONNECT_DIST || abs(dy) >= CONNECT_DIST) continue;
+
+            /* 2. Is particle a near the mouse? */
+            const dMx = a.pos.x - mouseX;
+            const dMy = a.pos.y - mouseY;
+            if (abs(dMx) >= CONNECT_RADIUS || abs(dMy) >= CONNECT_RADIUS) continue;
+
+            /* Fade line out as it approaches the edge of CONNECT_RADIUS */
+            const dotDist = sqrt(dMx * dMx + dMy * dMy);
+            let ratio = dotDist / CONNECT_RADIUS - 0.3;
+            if (ratio < 0) ratio = 0;
+
+            stroke(140, 180, 255, (1 - ratio) * 255);
+            strokeWeight(0.3);
+            line(a.pos.x, a.pos.y, b.pos.x, b.pos.y);
+        }
+    }
+}
+
+/* POST-CLICK : original ambient + mouse-map connections */
 function updateConnections() {
     particleConns.clear();
     for (let p1 of particles) {
@@ -47,15 +102,9 @@ function updateConnections() {
     }
 }
 
-function draw() {
-    background(0, 25);
-
-    if (!isPicLocked && millis() - lastConnTime >= 200) {
-        updateConnections();
-        lastConnTime = millis();
-    }
-
-    if (!isPicLocked && random() < 0.4) {
+function drawConnectionsOld() {
+    /* Ambient random low-alpha lines between any two particles within 80px */
+    if (random() < 0.4) {
         let p1 = random(particles);
         for (let p2 of particles) {
             if (p1 !== p2) {
@@ -69,21 +118,54 @@ function draw() {
         }
     }
 
-    if (!isPicLocked) {
-        particleConns.forEach((conns, p1) => {
-            let md = dist(mouseX, mouseY, p1.pos.x, p1.pos.y);
-            for (let p2 of conns) {
-                let d     = dist(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y);
-                let alpha = map(d, 0, 100, 80, 0) * map(md, 0, 120, 1, 0);
-                stroke(140, 180, 255, alpha);
-                strokeWeight(0.5);
-                line(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y);
+    /* Mouse-triggered bright connections from pre-computed Map */
+    particleConns.forEach((conns, p1) => {
+        let md = dist(mouseX, mouseY, p1.pos.x, p1.pos.y);
+        for (let p2 of conns) {
+            let d     = dist(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y);
+            let alpha = map(d, 0, 100, 80, 0) * map(md, 0, 120, 1, 0);
+            stroke(140, 180, 255, alpha);
+            strokeWeight(0.5);
+            line(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y);
+        }
+    });
+}
+
+function draw() {
+    background(0, 25);
+
+    if (isPicLocked) {
+        /* ── POST-CLICK : Perlin noise mode ── */
+
+        /* On the frame isPicLocked first becomes true, snap each
+           particle's Perlin base to its current position so the
+           noise drift begins from exactly where the particle is. */
+        if (!wasPicLocked) {
+            for (let p of particles) {
+                p.base = p.pos.copy();
             }
-        });
+            wasPicLocked = true;
+        }
+
+        /* No connections post-click — particles drift silently */
+        for (let p of particles) { p.updatePerlin(); p.display(); }
+
+    } else {
+        /* ── PRE-CLICK : wall-bounce mode ── */
+
+        /* First particle tracks mouse */
+        particles[0].pos.x = mouseX;
+        particles[0].pos.y = mouseY;
+        for (let i = 1; i < particles.length; i++) {
+            particles[i].updateBounce();
+        }
+
+        drawConnectionsNew();
+
+        for (let p of particles) { p.display(); }
     }
 
-    for (let p of particles) { p.update(); p.display(); }
-
+    /* Name scramble on mouse movement */
     const nameEl = document.getElementById("name-text");
     if (nameEl && !isPicLocked && !isOnProfilePic &&
         dist(mouseX, mouseY, lastMouseX, lastMouseY) >= 50 &&
@@ -97,18 +179,37 @@ function draw() {
 
 class Particle {
     constructor(x, y) {
-        this.pos          = createVector(x, y);
-        this.base         = this.pos.copy();
-        this.nOX          = random(1000);
-        this.nOY          = random(1000);
+        this.pos = createVector(x, y);
+
+        /* PRE-CLICK : wall-bounce properties */
+        this.vx = random(-0.5, 0.5);
+        this.vy = random(-0.5, 0.5);
+
+        /* POST-CLICK : Perlin noise properties.
+           base is snapped to current pos on click so there's no jump. */
+        this.base   = this.pos.copy();
+        this.nOX    = random(1000);
+        this.nOY    = random(1000);
+        this.radius = random(3, 20);   /* max drift distance */
+
+        /* Shared display properties */
+        this.r            = random(0.8, 1.5);
         this.tOff         = random(1000);
-        this.radius       = random(3, 20);
         this.twinkleSpeed = random(0.02, 0.05);
         this.brightness   = random(90, 150);
-        this.size         = random(0.8, 1.5);
     }
 
-    update() {
+    /* PRE-CLICK : linear motion, wall bounce */
+    updateBounce() {
+        if (this.pos.y < 0 || this.pos.y > height) this.vy *= -1;
+        if (this.pos.x < 0 || this.pos.x > width)  this.vx *= -1;
+        this.pos.x += this.vx;
+        this.pos.y += this.vy;
+        this.tOff += this.twinkleSpeed;
+    }
+
+    /* POST-CLICK : Perlin noise drift from base position */
+    updatePerlin() {
         this.pos.x = this.base.x + map(noise(this.nOX), 0, 1, -this.radius, this.radius);
         this.pos.y = this.base.y + map(noise(this.nOY), 0, 1, -this.radius, this.radius);
         this.nOX  += 0.01;
@@ -121,7 +222,7 @@ class Particle {
         let mi      = pow(map(md, 0, 200, 1, 0, true), 1.5);
         let twinkle = (sin(this.tOff) * 0.5 + 0.5) * (noise(this.tOff * 0.5) * 0.5 + 0.5);
         let b       = this.brightness * (0.5 + twinkle * 0.5) + mi * 195;
-        let s       = this.size * (0.8 + twinkle * 0.2) + mi * 1.5;
+        let s       = this.r * (0.8 + twinkle * 0.2) + mi * 1.5;
 
         stroke(140, 180, 255, b);
         strokeWeight(s);
