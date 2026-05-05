@@ -2,12 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
     <title>Sudiksha Kalepu</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Economica:wght@400;700&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Economica:wght@400;700&family=Fira+Code:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -18,32 +30,65 @@
     <nav id="main-nav">
       <ul class="nav-links">
         <li><a href="#home">Home</a></li>
-        <li><a href="#skills">Skills</a></li>
         <li><a href="#projects">Projects</a></li>
+        <li><a href="#skills">Skills</a></li>
       </ul>
       <button class="hamburger" id="hamburger" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
       <div class="social-icons">
-        <a href="https://github.com/sudikshakalepu" target="_blank"><img src="assets/github.png" alt="GitHub" /></a>
-        <a href="https://www.linkedin.com/in/sudikshakalepu/" target="_blank"><img src="assets/linkedin.png" alt="LinkedIn" /></a>
-        <a href="mailto:sk9806@nyu.edu"><img src="assets/gmail.png" alt="Email" /></a>
+        <a href="https://github.com/sudikshakalepu" target="_blank"
+          ><img src="assets/github.png" alt="GitHub"
+        /></a>
+        <a href="https://www.linkedin.com/in/sudikshakalepu/" target="_blank"
+          ><img src="assets/linkedin.png" alt="LinkedIn"
+        /></a>
+        <a href="mailto:sk9806@nyu.edu"
+          ><img src="assets/gmail.png" alt="Email"
+        /></a>
+        <a href="assets/cv.pdf" target="_blank"
+          ><img src="assets/cv.png" alt="CV"
+        /></a>
       </div>
     </nav>
 
     <div class="mobile-menu" id="mobile-menu">
       <a href="#home">Home</a>
-      <a href="#skills">Skills</a>
       <a href="#projects">Projects</a>
+      <a href="#skills">Skills</a>
     </div>
 
     <!-- PAGE INDICATOR : fixed right-side dots showing current section.
          JS updates .active class on scroll inside #snap-wrap. -->
-    <nav class="page-indicator" id="page-indicator" aria-label="Section indicator">
-      <a href="#home"     class="indicator-dot active" data-section="home"     aria-label="Home"></a>
-      <a href="#skills"   class="indicator-dot"        data-section="skills"   aria-label="Skills"></a>
-      <a href="#projects" class="indicator-dot"        data-section="projects" aria-label="Projects"></a>
-      <a href="#contact"  class="indicator-dot"        data-section="contact"  aria-label="Contact"></a>
+    <nav
+      class="page-indicator"
+      id="page-indicator"
+      aria-label="Section indicator"
+    >
+      <a
+        href="#home"
+        class="indicator-dot active"
+        data-section="home"
+        aria-label="Home"
+      ></a>
+      <a
+        href="#projects"
+        class="indicator-dot"
+        data-section="projects"
+        aria-label="Projects"
+      ></a>
+      <a
+        href="#skills"
+        class="indicator-dot"
+        data-section="skills"
+        aria-label="Skills"
+      ></a>
+      <a
+        href="#contact"
+        class="indicator-dot"
+        data-section="contact"
+        aria-label="Contact"
+      ></a>
     </nav>
 
     <!-- SNAP WRAP : scroll-snap container for all sections.
@@ -51,48 +96,22 @@
          has a single unambiguous scroll context, which fixes
          unreliable snapping on Chrome and Safari. -->
     <div id="snap-wrap">
-
       <!-- 1. HOME : snaps to top -->
       <section id="home">
         <div class="intro">
           <!-- PFP : rounded-rectangle style matching carousel cards -->
-          <img src="assets/pfp.jpeg" alt="Sudiksha Kalepu" class="profile-pic" id="profile-pic" />
+          <img
+            src="assets/pfp.jpeg"
+            alt="Sudiksha Kalepu"
+            class="profile-pic"
+            id="profile-pic"
+          />
           <h1>Hello, I'm <span id="name-text">rjkvYedk</span>.</h1>
           <p>I love projects in <span id="changing-text">data science</span></p>
         </div>
       </section>
 
-      <!-- 2. SKILLS : shooting stars, full viewport
-           .night rotated 45deg; .skill-label counter-
-           rotated -45deg to read horizontally.
-           Stars spread across the full section height. -->
-      <section id="skills">
-        <div class="skills-overlay-title">Skills &amp; Tools</div>
-        <div class="night">
-          <div class="shooting_star"><span class="skill-label">Python</span></div>
-          <div class="shooting_star"><span class="skill-label">p5.js</span></div>
-          <div class="shooting_star"><span class="skill-label">Flask</span></div>
-          <div class="shooting_star"><span class="skill-label">XGBoost</span></div>
-          <div class="shooting_star"><span class="skill-label">LSTM Networks</span></div>
-          <div class="shooting_star"><span class="skill-label">GloVe Embeddings</span></div>
-          <div class="shooting_star"><span class="skill-label">NLP</span></div>
-          <div class="shooting_star"><span class="skill-label">K-Prototypes</span></div>
-          <div class="shooting_star"><span class="skill-label">Scikit-learn</span></div>
-          <div class="shooting_star"><span class="skill-label">PyTorch</span></div>
-          <div class="shooting_star"><span class="skill-label">TensorFlow</span></div>
-          <div class="shooting_star"><span class="skill-label">SQL</span></div>
-          <div class="shooting_star"><span class="skill-label">Perlin Noise</span></div>
-          <div class="shooting_star"><span class="skill-label">React</span></div>
-          <div class="shooting_star"><span class="skill-label">Node.js</span></div>
-          <div class="shooting_star"><span class="skill-label">Figma</span></div>
-          <div class="shooting_star"><span class="skill-label">Computer Vision</span></div>
-          <div class="shooting_star"><span class="skill-label">Collaborative Filtering</span></div>
-          <div class="shooting_star"><span class="skill-label">Data Visualization</span></div>
-          <div class="shooting_star"><span class="skill-label">Physical Computing</span></div>
-        </div>
-      </section>
-
-      <!-- 3. PROJECTS : carousel, full viewport
+      <!-- 2. PROJECTS : carousel, full viewport
            Comm Lab (1–4) first with actual screenshots,
            then Data Science (5–9) and Art (10–12).
            Images: copy elevator.png, evening.png,
@@ -103,12 +122,23 @@
         <div class="carousel-container">
           <div class="slide">
             <!-- Comm Lab 01 -->
-            <div class="item" style="background-image: url(assets/elevator.png)">
+            <div
+              class="item"
+              style="background-image: url(assets/elevator.png)"
+            >
               <div class="content">
                 <div class="tag">Comm Lab · 01</div>
                 <div class="name">the elevator &amp;<br />The Elevated</div>
-                <div class="des">An interactive narrative built around two people, one elevator, and what gets said in between</div>
-                <a href="https://sudikshakalepu.github.io/comm-lab/" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  An interactive narrative built around two people, one
+                  elevator, and what gets said in between
+                </div>
+                <a
+                  href="https://sudikshakalepu.github.io/comm-lab/"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Comm Lab 02 -->
@@ -116,53 +146,116 @@
               <div class="content">
                 <div class="tag">Comm Lab · 02</div>
                 <div class="name">An Evening of<br />Coming Home</div>
-                <div class="des">A digital comic tracing the quiet rituals of returning to a place that knows you</div>
-                <a href="https://dsshji.github.io/comms_lab_digitalcomic/index.html" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  A digital comic tracing the quiet rituals of returning to a
+                  place that knows you
+                </div>
+                <a
+                  href="https://dsshji.github.io/comms_lab_digitalcomic/index.html"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Comm Lab 03 -->
-            <div class="item" style="background-image: url(assets/meant_to_be.png)">
+            <div
+              class="item"
+              style="background-image: url(assets/meant_to_be.png)"
+            >
               <div class="content">
                 <div class="tag">Comm Lab · 03</div>
                 <div class="name">meant to be?</div>
-                <div class="des">A sound scrapbook assembling the noise, silence, and coincidence of everyday life</div>
-                <a href="https://prakratimamtani01.github.io/project3-sound-scrapbook/" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  A sound scrapbook assembling the noise, silence, and
+                  coincidence of everyday life
+                </div>
+                <a
+                  href="https://prakratimamtani01.github.io/project3-sound-scrapbook/"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Comm Lab 04 -->
-            <div class="item" style="background-image: url(assets/linkedout.png)">
+            <div
+              class="item"
+              style="background-image: url(assets/linkedout.png)"
+            >
               <div class="content">
                 <div class="tag">Comm Lab · 04</div>
                 <div class="name">How to Spend<br />Irresponsibly?</div>
-                <div class="des">An interactive guide to making purchases you absolutely cannot justify</div>
-                <a href="https://sudikshakalepu.github.io/how-to-spend-irresponsibly/" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  An interactive guide to making purchases you absolutely cannot
+                  justify
+                </div>
+                <a
+                  href="https://sudikshakalepu.github.io/how-to-spend-irresponsibly/"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Data Science 05 -->
-            <div class="item" style="background-image: url(assets/recommender.png)">
+            <div
+              class="item"
+              style="background-image: url(assets/recommender.png)"
+            >
               <div class="content">
                 <div class="tag">Data Science</div>
                 <div class="name">E-commerce<br />Recommender</div>
-                <div class="des">Flask-based personalized product recommendations using collaborative filtering</div>
-                <a href="https://github.com/sudikshakalepu/recommendation_system_e-commerce" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  Flask-based personalized product recommendations using
+                  collaborative filtering
+                </div>
+                <a
+                  href="https://github.com/sudikshakalepu/recommendation_system_e-commerce"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Data Science 06 -->
-            <div class="item" style="background-image: url(assets/customer.png)">
+            <div
+              class="item"
+              style="background-image: url(assets/customer.png)"
+            >
               <div class="content">
                 <div class="tag">Data Science</div>
                 <div class="name">Customer<br />Clustering</div>
-                <div class="des">Advanced segmentation using K-Prototypes and Agglomerative Clustering</div>
-                <a href="https://github.com/sudikshakalepu/customer-clustering" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  Advanced segmentation using K-Prototypes and Agglomerative
+                  Clustering
+                </div>
+                <a
+                  href="https://github.com/sudikshakalepu/customer-clustering"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Data Science 07 -->
-            <div class="item" style="background-image: url(assets/sentiment.png)">
+            <div
+              class="item"
+              style="background-image: url(assets/sentiment.png)"
+            >
               <div class="content">
                 <div class="tag">NLP · Deep Learning</div>
                 <div class="name">Sentiment<br />Analysis</div>
-                <div class="des">Restaurant review analysis using LSTM networks and GloVe embeddings</div>
-                <a href="https://github.com/sudikshakalepu/sentiment-analysis/blob/main/sentiment_analysis_lstm_glove.ipynb" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  Restaurant review analysis using LSTM networks and GloVe
+                  embeddings
+                </div>
+                <a
+                  href="https://github.com/sudikshakalepu/sentiment-analysis/blob/main/sentiment_analysis_lstm_glove.ipynb"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Data Science 08 -->
@@ -170,8 +263,16 @@
               <div class="content">
                 <div class="tag">Healthcare · ML</div>
                 <div class="name">Smoker Status<br />Prediction</div>
-                <div class="des">Bio-signal classification using XGBoost for real-world health applications</div>
-                <a href="https://github.com/sudikshakalepu/smoker-status-classification-xgboost" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  Bio-signal classification using XGBoost for real-world health
+                  applications
+                </div>
+                <a
+                  href="https://github.com/sudikshakalepu/smoker-status-classification-xgboost"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Data Science 09 -->
@@ -179,8 +280,15 @@
               <div class="content">
                 <div class="tag">Data Science</div>
                 <div class="name">Credit Approval<br />Clustering</div>
-                <div class="des">Multi-algorithm approach: K-Means, K-Modes, and K-Prototypes</div>
-                <a href="https://github.com/sudikshakalepu/credit-approval-clustering/blob/main/Clustering_KMeans_KModes_KPrototypes.ipynb" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  Multi-algorithm approach: K-Means, K-Modes, and K-Prototypes
+                </div>
+                <a
+                  href="https://github.com/sudikshakalepu/credit-approval-clustering/blob/main/Clustering_KMeans_KModes_KPrototypes.ipynb"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Art 10 -->
@@ -188,17 +296,36 @@
               <div class="content">
                 <div class="tag">Interactive Art</div>
                 <div class="name">Desert Art<br />Robot</div>
-                <div class="des">Autonomous robotic installation drawing patterns in sand in response to its environment</div>
-                <a href="https://desert.nyuadim.com/nomad/" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  Autonomous robotic installation drawing patterns in sand in
+                  response to its environment
+                </div>
+                <a
+                  href="https://desert.nyuadim.com/nomad/"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Art 11 -->
-            <div class="item" style="background-image: url(assets/dandelion.png)">
+            <div
+              class="item"
+              style="background-image: url(assets/dandelion.png)"
+            >
               <div class="content">
                 <div class="tag">p5.js · Generative</div>
                 <div class="name">Interactive<br />Dandelion</div>
-                <div class="des">Dynamic p5.js animation responding to user interaction with Perlin noise</div>
-                <a href="https://editor.p5js.org/sudikshakalepu/full/XcD6c6heO" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  Dynamic p5.js animation responding to user interaction with
+                  Perlin noise
+                </div>
+                <a
+                  href="https://editor.p5js.org/sudikshakalepu/full/XcD6c6heO"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
             <!-- Art 12 -->
@@ -206,38 +333,154 @@
               <div class="content">
                 <div class="tag">Data Art</div>
                 <div class="name">IATA<br />Code Art</div>
-                <div class="des">Creative data visualization of global airport codes using p5.js</div>
-                <a href="https://editor.p5js.org/sudikshakalepu/full/1rbK9ynom" target="_blank" class="view-btn">View Project</a>
+                <div class="des">
+                  Creative data visualization of global airport codes using
+                  p5.js
+                </div>
+                <a
+                  href="https://editor.p5js.org/sudikshakalepu/full/1rbK9ynom"
+                  target="_blank"
+                  class="view-btn"
+                  >View Project</a
+                >
               </div>
             </div>
           </div>
           <!-- /.slide -->
           <div class="carousel-buttons">
             <button class="prev"><i class="fa-solid fa-arrow-left"></i></button>
-            <button class="next"><i class="fa-solid fa-arrow-right"></i></button>
+            <button class="next">
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
           </div>
         </div>
         <!-- /.carousel-container -->
       </section>
 
+      <!-- 3. SKILLS : shooting stars, full viewport
+           .night rotated 45deg; .skill-label counter-
+           rotated -45deg to read horizontally.
+           Stars spread across the full section height.
+           44 stars covering all skill categories. -->
+      <section id="skills">
+        <div class="skills-overlay-title">Skills</div>
+        <div class="night">
+          <!-- Languages & Frameworks -->
+          <div class="shooting_star">
+            <span class="skill-label">Python</span>
+          </div>
+          <div class="shooting_star"><span class="skill-label">SQL</span></div>
+          <div class="shooting_star">
+            <span class="skill-label">Flask</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">React</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">Node.js</span>
+          </div>
+          <!-- ML & AI -->
+          <div class="shooting_star">
+            <span class="skill-label">Scikit-learn</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">PyTorch</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">TensorFlow</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">XGBoost</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">LSTM Networks</span>
+          </div>
+          <div class="shooting_star"><span class="skill-label">NLP</span></div>
+          <div class="shooting_star">
+            <span class="skill-label">Computer Vision</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">Collaborative Filtering</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">Hugging Face Transformers</span>
+          </div>
+          <div class="shooting_star"><span class="skill-label">RAG</span></div>
+          <div class="shooting_star">
+            <span class="skill-label">K-Prototypes</span>
+          </div>
+          <!-- Data Engineering -->
+          <div class="shooting_star">
+            <span class="skill-label">Apache Spark</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">Databricks</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">Apache Airflow</span>
+          </div>
+          <!-- Analytics -->
+          <div class="shooting_star">
+            <span class="skill-label">Statistics</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">Predictive Analytics</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">A/B Testing</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">Time Series Analysis</span>
+          </div>
+          <!-- MLOps & Infra -->
+          <div class="shooting_star">
+            <span class="skill-label">Docker</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">MLflow</span>
+          </div>
+          <div class="shooting_star"><span class="skill-label">AWS</span></div>
+          <div class="shooting_star">
+            <span class="skill-label">Azure</span>
+          </div>
+          <!-- Creative & Other -->
+          <div class="shooting_star">
+            <span class="skill-label">p5.js</span>
+          </div>
+          <div class="shooting_star">
+            <span class="skill-label">Physical Computing</span>
+          </div>
+        </div>
+      </section>
+
       <!-- 4. CONTACT : same logo images as the nav bar social icons -->
       <section id="contact">
         <div class="contact-container">
-          <div class="contact-title">Let's Connect</div>
+          <div class="contact-title">Reach Me At</div>
           <div class="contact-icons">
-            <a href="https://github.com/sudikshakalepu" target="_blank" class="contact-icon-link">
+            <a
+              href="https://github.com/sudikshakalepu"
+              target="_blank"
+              class="contact-icon-link"
+            >
               <img src="assets/github.png" alt="GitHub" />
             </a>
-            <a href="https://www.linkedin.com/in/sudikshakalepu/" target="_blank" class="contact-icon-link">
+            <a
+              href="https://www.linkedin.com/in/sudikshakalepu/"
+              target="_blank"
+              class="contact-icon-link"
+            >
               <img src="assets/linkedin.png" alt="LinkedIn" />
             </a>
             <a href="mailto:sk9806@nyu.edu" class="contact-icon-link">
               <img src="assets/gmail.png" alt="Email" />
             </a>
+            <a href="assets/cv.pdf" target="_blank" class="contact-icon-link">
+              <img src="assets/cv.png" alt="CV" />
+            </a>
           </div>
         </div>
       </section>
-
     </div>
     <!-- /#snap-wrap -->
 
