@@ -54,7 +54,7 @@ function setup() {
     const container = document.getElementById('p5-container');
     let canvas      = createCanvas(window.innerWidth, window.innerHeight);
     canvas.parent(container);
-    for (let i = 0; i < 250; i++) {
+    for (let i = 0; i < 200; i++) {
         particles.push(new Particle(random(width), random(height)));
     }
 }
@@ -160,7 +160,11 @@ function draw() {
             particles[i].updateBounce();
         }
 
-        drawConnectionsNew();
+        /* Connections only on tablet/desktop — below 768px the network
+           is too dense and distracting on small screens. */
+        if (window.innerWidth >= 768) {
+            drawConnectionsNew();
+        }
 
         for (let p of particles) { p.display(); }
     }
