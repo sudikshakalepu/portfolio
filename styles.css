@@ -1,477 +1,843 @@
-/* SUDIKSHA KALEPU : portfolio script
-   Sections:
-     1.  P5.JS    : Particle background (Perlin noise)
-     2.  NAME     : Scramble & reveal on profile pic
-     3.  TYPING   : Typewriter cycling 10 phrases
-     4.  CAROUSEL : Project carousel prev/next with
-                    proper animation reset on each advance
-     5.  UI       : Hamburger menu
-     6.  NAV      : Anchor links scroll inside #snap-wrap
-     7.  INDICATOR: Right-side dot nav updates on scroll
-     8.  INIT     : Bootstrap on window load */
+@import url('https://fonts.googleapis.com/css2?family=Economica:wght@400;700&family=Fira+Code:wght@300;400;500;600;700&display=swap');
 
 
-/* 1.  P5.JS : PARTICLE BACKGROUND
-
-   Two distinct modes controlled by isPicLocked:
-
-   PRE-CLICK (isPicLocked = false) — referenced code style:
-     - Linear vx/vy motion, wall-bounce on edges
-     - First particle tracks mouse
-     - Connections drawn between nearby particles that are also
-       near the mouse, fading toward the edge of CONNECT_RADIUS
-
-   POST-CLICK (isPicLocked = true) — original Perlin noise style:
-     - Each particle drifts via Perlin noise from a base position
-     - Ambient random lines between any two particles within 80px
-     - Mouse-proximity connections via particleConns Map
-
-   Each Particle stores properties for both modes.
-   On click, base is snapped to current pos so Perlin noise
-   begins drifting from exactly where the particle is at that
-   moment — no visual jump. */
-
-let particles      = [];
-let lastMouseX     = -1;
-let lastMouseY     = -1;
-let lastTextChange = 0;
-let isOnProfilePic = false;
-let isPicLocked    = false;
-let wasPicLocked   = false;   /* tracks transition to trigger base snap */
-
-/* Post-click connection state — restored from original */
-let particleConns = new Map();
-let lastConnTime  = 0;
-
-const ORIGINAL_NAME = "Sudiksha";
-const RANDOM_CHARS  = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
-
-/* Pre-click connection thresholds — referenced code style */
-const CONNECT_DIST   = 80;
-const CONNECT_RADIUS = 260;
-
-function setup() {
-    const container = document.getElementById('p5-container');
-    let canvas      = createCanvas(window.innerWidth, window.innerHeight);
-    canvas.parent(container);
-    for (let i = 0; i < 200; i++) {
-        particles.push(new Particle(random(width), random(height)));
-    }
-}
-
-/* PRE-CLICK : draw connections between nearby particles near mouse */
-function drawConnectionsNew() {
-    for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-            const a = particles[i];
-            const b = particles[j];
-
-            /* 1. Are the two particles close to each other? */
-            const dx = a.pos.x - b.pos.x;
-            const dy = a.pos.y - b.pos.y;
-            if (abs(dx) >= CONNECT_DIST || abs(dy) >= CONNECT_DIST) continue;
-
-            /* 2. Is particle a near the mouse? */
-            const dMx = a.pos.x - mouseX;
-            const dMy = a.pos.y - mouseY;
-            if (abs(dMx) >= CONNECT_RADIUS || abs(dMy) >= CONNECT_RADIUS) continue;
-
-            /* Fade line out as it approaches the edge of CONNECT_RADIUS */
-            const dotDist = sqrt(dMx * dMx + dMy * dMy);
-            let ratio = dotDist / CONNECT_RADIUS - 0.3;
-            if (ratio < 0) ratio = 0;
-
-            stroke(140, 180, 255, (1 - ratio) * 255);
-            strokeWeight(0.3);
-            line(a.pos.x, a.pos.y, b.pos.x, b.pos.y);
-        }
-    }
-}
-
-/* POST-CLICK : original ambient + mouse-map connections */
-function updateConnections() {
-    particleConns.clear();
-    for (let p1 of particles) {
-        if (dist(mouseX, mouseY, p1.pos.x, p1.pos.y) < 120) {
-            let nearby = particles
-                .filter(p2 => p2 !== p1 && dist(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y) < 200)
-                .sort(() => Math.random() - 0.3)
-                .slice(0, 16);
-            particleConns.set(p1, nearby);
-        }
-    }
-}
-
-function drawConnectionsOld() {
-    /* Ambient random low-alpha lines between any two particles within 80px */
-    if (random() < 0.4) {
-        let p1 = random(particles);
-        for (let p2 of particles) {
-            if (p1 !== p2) {
-                let d = dist(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y);
-                if (d < 80) {
-                    stroke(140, 180, 255, map(d, 0, 80, 30, 0));
-                    strokeWeight(0.4);
-                    line(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y);
-                }
-            }
-        }
-    }
-
-    /* Mouse-triggered bright connections from pre-computed Map */
-    particleConns.forEach((conns, p1) => {
-        let md = dist(mouseX, mouseY, p1.pos.x, p1.pos.y);
-        for (let p2 of conns) {
-            let d     = dist(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y);
-            let alpha = map(d, 0, 100, 80, 0) * map(md, 0, 120, 1, 0);
-            stroke(140, 180, 255, alpha);
-            strokeWeight(0.5);
-            line(p1.pos.x, p1.pos.y, p2.pos.x, p2.pos.y);
-        }
-    });
-}
-
-function draw() {
-    background(0, 25);
-
-    if (isPicLocked) {
-        /* ── POST-CLICK : Perlin noise mode ── */
-
-        /* On the frame isPicLocked first becomes true, snap each
-           particle's Perlin base to its current position so the
-           noise drift begins from exactly where the particle is. */
-        if (!wasPicLocked) {
-            for (let p of particles) {
-                p.base = p.pos.copy();
-            }
-            wasPicLocked = true;
-        }
-
-        /* No connections post-click — particles drift silently */
-        for (let p of particles) { p.updatePerlin(); p.display(); }
-
-    } else {
-        /* ── PRE-CLICK : wall-bounce mode ── */
-
-        /* First particle tracks mouse */
-        particles[0].pos.x = mouseX;
-        particles[0].pos.y = mouseY;
-        for (let i = 1; i < particles.length; i++) {
-            particles[i].updateBounce();
-        }
-
-        /* Connections only on tablet/desktop — below 768px the network
-           is too dense and distracting on small screens. */
-        if (window.innerWidth >= 768) {
-            drawConnectionsNew();
-        }
-
-        for (let p of particles) { p.display(); }
-    }
-
-    /* Name scramble on mouse movement */
-    const nameEl = document.getElementById("name-text");
-    if (nameEl && !isPicLocked && !isOnProfilePic &&
-        dist(mouseX, mouseY, lastMouseX, lastMouseY) >= 50 &&
-        millis() - lastTextChange >= 200) {
-        nameEl.textContent = randomName();
-        lastMouseX     = mouseX;
-        lastMouseY     = mouseY;
-        lastTextChange = millis();
-    }
-}
-
-class Particle {
-    constructor(x, y) {
-        this.pos = createVector(x, y);
-
-        /* PRE-CLICK : wall-bounce properties */
-        this.vx = random(-0.5, 0.5);
-        this.vy = random(-0.5, 0.5);
-
-        /* POST-CLICK : Perlin noise properties.
-           base is snapped to current pos on click so there's no jump. */
-        this.base   = this.pos.copy();
-        this.nOX    = random(1000);
-        this.nOY    = random(1000);
-        this.radius = random(3, 20);   /* max drift distance */
-
-        /* Shared display properties */
-        this.r            = random(0.8, 1.5);
-        this.tOff         = random(1000);
-        this.twinkleSpeed = random(0.02, 0.05);
-        this.brightness   = random(90, 150);
-    }
-
-    /* PRE-CLICK : linear motion, wall bounce */
-    updateBounce() {
-        if (this.pos.y < 0 || this.pos.y > height) this.vy *= -1;
-        if (this.pos.x < 0 || this.pos.x > width)  this.vx *= -1;
-        this.pos.x += this.vx;
-        this.pos.y += this.vy;
-        this.tOff += this.twinkleSpeed;
-    }
-
-    /* POST-CLICK : Perlin noise drift from base position */
-    updatePerlin() {
-        this.pos.x = this.base.x + map(noise(this.nOX), 0, 1, -this.radius, this.radius);
-        this.pos.y = this.base.y + map(noise(this.nOY), 0, 1, -this.radius, this.radius);
-        this.nOX  += 0.01;
-        this.nOY  += 0.01;
-        this.tOff += this.twinkleSpeed;
-    }
-
-    display() {
-        let md      = dist(mouseX, mouseY, this.pos.x, this.pos.y);
-        let mi      = pow(map(md, 0, 200, 1, 0, true), 1.5);
-        let twinkle = (sin(this.tOff) * 0.5 + 0.5) * (noise(this.tOff * 0.5) * 0.5 + 0.5);
-        let b       = this.brightness * (0.5 + twinkle * 0.5) + mi * 195;
-        let s       = this.r * (0.8 + twinkle * 0.2) + mi * 1.5;
-
-        stroke(140, 180, 255, b);
-        strokeWeight(s);
-        point(this.pos.x, this.pos.y);
-
-        if (mi > 0.3) {
-            stroke(140, 180, 255, b * 0.3);
-            strokeWeight(s * 2);
-            point(this.pos.x, this.pos.y);
-        }
-    }
-}
-
-function windowResized() {
-    resizeCanvas(window.innerWidth, window.innerHeight);
-}
-
-function randomName() {
-    return Array.from({ length: 8 }, () =>
-        RANDOM_CHARS[Math.floor(Math.random() * RANDOM_CHARS.length)]
-    ).join("");
+/* VARIABLES */
+:root {
+    --cream: #f1dac4;
+    --lavender: #a69cac;
+    --purple: #474973;
+    --dark-blue: #161b33;
+    --darker-blue: #0d0c1d;
+    --star-blue: rgba(95, 145, 255, 1);
+    --star-fade: rgba(0, 0, 255, 0);
+    --shooting-time: 5500ms;  /* slowed down from 3000ms */
 }
 
 
-/* 2.  NAME : Profile pic hover/click states */
-function initNameInteraction() {
-    const nameEl = document.getElementById("name-text");
-    const picEl  = document.getElementById("profile-pic");
-    if (!nameEl || !picEl) return;
+/* SCROLL SNAP : removed from html, now lives on #snap-wrap.
+   A contained scrollable div gives the browser a single
+   unambiguous scroll context, fixing unreliable snapping
+   on Chrome and Safari. scroll-padding-top offsets the
+   fixed nav (64px) so sections land below it. */
+html {
+    height: 100%;
+}
 
-    const lockName = () => {
-        isPicLocked        = true;
-        nameEl.textContent = ORIGINAL_NAME;
-    };
-
-    picEl.addEventListener("mouseover", () => {
-        if (!isPicLocked) { nameEl.textContent = ORIGINAL_NAME; isOnProfilePic = true; }
-    });
-    picEl.addEventListener("mouseout", () => {
-        if (!isPicLocked) { isOnProfilePic = false; nameEl.textContent = randomName(); }
-    });
-    picEl.addEventListener("click", lockName);
-    picEl.addEventListener("touchend", (e) => { e.preventDefault(); lockName(); });
+/* SNAP WRAP : the actual scroll + snap container.
+   -webkit-overflow-scrolling and -webkit-scroll-snap-type are required
+   for iOS Safari, which ignores the unprefixed versions in some builds.
+   overscroll-behavior: none prevents rubber-band bounce fighting snap. */
+#snap-wrap {
+    height: 100vh;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: y mandatory;
+    -webkit-scroll-snap-type: y mandatory;
+    scroll-padding-top: 64px;
+    scroll-behavior: smooth;
+    overscroll-behavior: none;
 }
 
 
-/* 3.  TYPING : Typewriter cycling 10 phrases */
-const PHRASES = [
-    "data science.",
-    "product management.",
-    "software development.",
-    "cloud solutions.",
-    "machine learning.",
-    "computer vision.",
-    "natural language processing.",
-    "human-computer interaction.",
-    "physical computing.",
-    "computational media."
-];
+/* RESET & BASE */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-let currentPhrase = "";
-let phraseIndex   = 0;
-let charIdx       = 0;
-let isDeleting    = false;
-let typingTimer   = null;
-
-function typeText() {
-    const el = document.getElementById("changing-text");
-    if (!el) return;
-    if (typingTimer) clearTimeout(typingTimer);
-
-    if (isDeleting) {
-        currentPhrase = currentPhrase.slice(0, -1);
-        typingTimer   = setTimeout(typeText, 60);
-    } else {
-        currentPhrase = PHRASES[phraseIndex].slice(0, charIdx + 1);
-        charIdx++;
-        typingTimer = setTimeout(typeText, 60 + Math.random() * 50);
-    }
-
-    el.textContent = currentPhrase;
-
-    if (!isDeleting && charIdx === PHRASES[phraseIndex].length) {
-        isDeleting  = true;
-        typingTimer = setTimeout(typeText, 1500);
-        return;
-    }
-    if (isDeleting && currentPhrase === "") {
-        isDeleting  = false;
-        phraseIndex = (phraseIndex + 1) % PHRASES.length;
-        charIdx     = 0;
-        typingTimer = setTimeout(typeText, 500);
-    }
+body {
+    background-color: var(--darker-blue);
+    font-family: 'Fira Code', monospace;
+    color: var(--cream);
+    overflow-x: hidden;
+    min-height: 100%;
 }
 
 
-/* 4.  CAROUSEL
+/* P5 CANVAS */
+#p5-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+
+/* NAVIGATION */
+#main-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    background: rgba(22, 27, 51, 0.8);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    height: 64px;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+}
+
+.nav-links li {
+    margin-right: 24px;
+}
+
+.nav-links a {
+    color: var(--cream);
+    text-decoration: none;
+    font-family: 'Economica', sans-serif;
+    font-size: 1.2em;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: var(--lavender);
+}
+
+.social-icons {
+    display: flex;
+    align-items: center;
+}
+
+.social-icons img {
+    width: 22px;
+    margin-left: 14px;
+    filter: brightness(0) invert(1);
+    transition: transform 0.3s ease;
+}
+
+.social-icons img:hover {
+    transform: translateY(-2px);
+}
+
+/* Hamburger */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--cream);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.hamburger.open span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.open span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger.open span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+.mobile-menu {
+    display: none;
+    flex-direction: column;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: rgba(13, 12, 29, 0.97);
+    backdrop-filter: blur(10px);
+    z-index: 99;
+    padding: 1.5rem 2rem 2rem;
+    border-bottom: 0.5px solid rgba(166, 156, 172, 0.1);
+}
+
+.mobile-menu a {
+    color: var(--cream);
+    text-decoration: none;
+    font-family: 'Economica', sans-serif;
+    font-size: 1.4em;
+    font-weight: bold;
+    padding: 0.8rem 0;
+    border-bottom: 0.5px solid rgba(166, 156, 172, 0.08);
+    transition: color 0.2s;
+}
+
+.mobile-menu a:hover {
+    color: var(--lavender);
+}
+
+.mobile-menu a:last-child {
+    border-bottom: none;
+}
+
+.mobile-menu.open {
+    display: flex;
+}
+
+
+/* PAGE INDICATOR : fixed right-side dot nav.
+   Four dots, one per section. JS adds .active on scroll.
+   Active dot is taller (pill shape) to signal current position.
+   Labels appear on hover via CSS tooltip using ::before. */
+.page-indicator {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.indicator-dot {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(166, 156, 172, 0.35);
+    border: 1px solid rgba(166, 156, 172, 0.2);
+    text-decoration: none;
+    transition: height 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+    position: relative;
+}
+
+/* Active dot : expands to pill, glows */
+.indicator-dot.active {
+    height: 26px;
+    background: var(--cream);
+    box-shadow: 0 0 10px rgba(241, 218, 196, 0.6),
+                0 0 20px rgba(241, 218, 196, 0.3);
+}
+
+/* Tooltip label : appears to the left of the dot on hover */
+.indicator-dot::before {
+    content: attr(aria-label);
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
+    color: var(--lavender);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    letter-spacing: 0.05em;
+}
+
+.indicator-dot:hover::before {
+    opacity: 1;
+}
+
+.indicator-dot:hover {
+    background: rgba(241, 218, 196, 0.6);
+}
+
+
+/* SHARED SECTION STYLES
+   Each snapping section fills the full viewport height.
+   scroll-snap-stop: always forces the snap to stop at
+   every section — prevents fast scrolling from skipping.
+   -webkit- prefixes required for iOS Safari. */
+section {
+    position: relative;
+    z-index: 1;
+    height: 100vh;
+    scroll-snap-align: start;
+    -webkit-scroll-snap-align: start;
+    scroll-snap-stop: always;
+    -webkit-scroll-snap-stop: always;
+}
+
+.section-title {
+    font-family: 'Economica', sans-serif;
+    font-size: 2.6em;
+    color: var(--cream);
+    text-align: center;
+    margin-bottom: 2rem;
+    letter-spacing: 0.02em;
+}
+
+
+/* 1. HOME */
+#home {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.intro h1 {
+    font-family: 'Economica', sans-serif;
+    font-size: 3.5em;
+    margin-top: 20px;
+    color: var(--cream);
+}
+
+.intro p {
+    font-family: 'Fira Code', monospace;
+    font-size: 1.2em;
+    color: var(--lavender);
+    margin-top: 10px;
+}
+
+#name-text {
+    color: var(--lavender);
+    font-family: 'Fira Code', monospace;
+    font-weight: bold;
+}
+
+/* PFP : rounded-rectangle matching the carousel card style.
+   border-radius: 16px mirrors .slide .item border-radius.
+   Larger than before (260px) and clipped to a tall rect
+   with object-fit to match the card aspect ratio feel. */
+.profile-pic {
+    width: 200px;
+    height: 267px;   /* 3:4 ratio — width × 4/3 */
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 16px;
+    cursor: pointer;
+    display: block;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-pic:hover {
+    transform: scale(1.04);
+    box-shadow: 0 28px 56px rgba(0, 0, 0, 0.7);
+}
+
+
+/* 2. SKILLS — Full-viewport shooting stars
+   Adapted from: codepen.io/YusukeNakaya/pen/XyOaBj (Only CSS: Shooting Star)
    
-   DOM order determines which card is featured.
-   CSS makes .item:nth-child(2) the full-size featured card.
+   Architecture:
+     #skills           → 100vh clip container
+     .skills-overlay-title → centred title above stars
+     .night            → fills full section, rotateZ(45deg)
+     .shooting_star    → animated comet (bigger + brighter)
+     .skill-label      → counter-rotated -45deg text
    
-   next → move items[0] to end  (advance forward)
-   prev → move last item to front (go back)
-   
-   After each DOM move, triggerContentAnimation() removes and
-   re-adds the content block on the new nth-child(2) so CSS
-   animation keyframes replay from 0. */
-function initCarousel() {
-    const nextBtn = document.querySelector('.next');
-    const prevBtn = document.querySelector('.prev');
-    const slide   = document.querySelector('.slide');
-    if (!nextBtn || !prevBtn || !slide) return;
+   Star sizing: further increased for more impact
+     height: 4px   (was 3px)
+     tail:   200px (was 160px)
+     travel: 550px (was 450px)
+     shine:  60px  (was 45px)
+   Glow: triple drop-shadow layers for max brightness */
+#skills {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
 
-    /**
-     * Forces the CSS entry animation to replay on the
-     * newly-featured card by removing the .content node
-     * and re-inserting a fresh clone of it.
-     */
-    function triggerContentAnimation() {
-        // Use setTimeout(0) so the DOM reorder completes first
-        setTimeout(() => {
-            const featured = slide.querySelector('.item:nth-child(2)');
-            if (!featured) return;
-            const content = featured.querySelector('.content');
-            if (!content) return;
-            // Force a reflow before re-inserting so animation starts clean
-            const clone = content.cloneNode(true);
-            content.remove();
-            void featured.offsetWidth;
-            featured.appendChild(clone);
-        }, 0);
+.skills-overlay-title {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    font-family: 'Economica', sans-serif;
+    font-size: 2.8em;
+    font-weight: 700;
+    color: var(--cream);
+    text-align: center;
+    pointer-events: none;
+    letter-spacing: 0.02em;
+    text-shadow:
+        0 0 40px rgba(13, 12, 29, 1),
+        0 0 80px rgba(13, 12, 29, 0.8),
+        0 0 120px rgba(13, 12, 29, 0.6);
+}
+
+.night {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotateZ(45deg);
+}
+
+.shooting_star {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    height: 2px;
+    background: linear-gradient(-45deg, var(--star-blue), var(--star-fade));
+    border-radius: 999px;
+    /* Single glow layer — less busy */
+    filter: drop-shadow(0 0 6px rgba(105, 155, 255, 0.9));
+    animation:
+        tail     var(--shooting-time) ease-in-out infinite,
+        shooting var(--shooting-time) ease-in-out infinite;
+}
+
+.shooting_star::before,
+.shooting_star::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, var(--star-fade), var(--star-blue), var(--star-fade));
+    border-radius: 100%;
+    animation: shining var(--shooting-time) ease-in-out infinite;
+}
+
+.shooting_star::before {
+    transform: translateX(50%) rotateZ(45deg);
+}
+
+.shooting_star::after {
+    transform: translateX(50%) rotateZ(-45deg);
+}
+
+/* Skill name — counter-rotated so it reads horizontally.
+   Font size up, stronger glow, slightly larger offset. */
+.skill-label {
+    position: absolute;
+    left: 0;
+    top: -18px;
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(180, 205, 255, 0.9);
+    white-space: nowrap;
+    transform: rotateZ(-45deg);
+    transform-origin: left bottom;
+    text-shadow:
+        0 0 6px  rgba(140, 180, 255, 0.8),
+        0 0 14px rgba(95,  145, 255, 0.5);
+    letter-spacing: 0.05em;
+    animation: label-fade var(--shooting-time) ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* ──────────────────────────────────────────────────────
+   Per-star positions and delays
+   Positions are spread across ±350px vertically and
+   a wider horizontal range to fill the full viewport.
+────────────────────────────────────────────────────── */
+.shooting_star:nth-child(1)  { top: calc(50% + 183px); left: calc(50% - 441px); animation-delay: 2341ms; }
+.shooting_star:nth-child(1)::before, .shooting_star:nth-child(1)::after, .shooting_star:nth-child(1) .skill-label { animation-delay: 2341ms; }
+
+.shooting_star:nth-child(2)  { top: calc(50% - 327px); left: calc(50% - 67px);  animation-delay: 7183ms; }
+.shooting_star:nth-child(2)::before, .shooting_star:nth-child(2)::after, .shooting_star:nth-child(2) .skill-label { animation-delay: 7183ms; }
+
+.shooting_star:nth-child(3)  { top: calc(50% + 247px); left: calc(50% - 289px); animation-delay: 4521ms; }
+.shooting_star:nth-child(3)::before, .shooting_star:nth-child(3)::after, .shooting_star:nth-child(3) .skill-label { animation-delay: 4521ms; }
+
+.shooting_star:nth-child(4)  { top: calc(50% - 293px); left: calc(50% + 134px); animation-delay: 1089ms; }
+.shooting_star:nth-child(4)::before, .shooting_star:nth-child(4)::after, .shooting_star:nth-child(4) .skill-label { animation-delay: 1089ms; }
+
+.shooting_star:nth-child(5)  { top: calc(50% + 356px); left: calc(50% - 478px); animation-delay: 8934ms; }
+.shooting_star:nth-child(5)::before, .shooting_star:nth-child(5)::after, .shooting_star:nth-child(5) .skill-label { animation-delay: 8934ms; }
+
+.shooting_star:nth-child(6)  { top: calc(50% - 71px);  left: calc(50% - 545px); animation-delay: 3467ms; }
+.shooting_star:nth-child(6)::before, .shooting_star:nth-child(6)::after, .shooting_star:nth-child(6) .skill-label { animation-delay: 3467ms; }
+
+.shooting_star:nth-child(7)  { top: calc(50% + 312px); left: calc(50% - 156px); animation-delay: 6789ms; }
+.shooting_star:nth-child(7)::before, .shooting_star:nth-child(7)::after, .shooting_star:nth-child(7) .skill-label { animation-delay: 6789ms; }
+
+.shooting_star:nth-child(8)  { top: calc(50% - 234px); left: calc(50% - 423px); animation-delay: 234ms;  }
+.shooting_star:nth-child(8)::before, .shooting_star:nth-child(8)::after, .shooting_star:nth-child(8) .skill-label { animation-delay: 234ms; }
+
+.shooting_star:nth-child(9)  { top: calc(50% + 289px); left: calc(50% + 12px);  animation-delay: 5678ms; }
+.shooting_star:nth-child(9)::before, .shooting_star:nth-child(9)::after, .shooting_star:nth-child(9) .skill-label { animation-delay: 5678ms; }
+
+.shooting_star:nth-child(10) { top: calc(50% - 345px); left: calc(50% - 267px); animation-delay: 2890ms; }
+.shooting_star:nth-child(10)::before, .shooting_star:nth-child(10)::after, .shooting_star:nth-child(10) .skill-label { animation-delay: 2890ms; }
+
+.shooting_star:nth-child(11) { top: calc(50% + 123px); left: calc(50% - 589px); animation-delay: 7456ms; }
+.shooting_star:nth-child(11)::before, .shooting_star:nth-child(11)::after, .shooting_star:nth-child(11) .skill-label { animation-delay: 7456ms; }
+
+.shooting_star:nth-child(12) { top: calc(50% - 278px); left: calc(50% + 78px);  animation-delay: 1234ms; }
+.shooting_star:nth-child(12)::before, .shooting_star:nth-child(12)::after, .shooting_star:nth-child(12) .skill-label { animation-delay: 1234ms; }
+
+.shooting_star:nth-child(13) { top: calc(50% + 167px); left: calc(50% + 134px); animation-delay: 9012ms; }
+.shooting_star:nth-child(13)::before, .shooting_star:nth-child(13)::after, .shooting_star:nth-child(13) .skill-label { animation-delay: 9012ms; }
+
+.shooting_star:nth-child(14) { top: calc(50% - 189px); left: calc(50% - 501px); animation-delay: 4321ms; }
+.shooting_star:nth-child(14)::before, .shooting_star:nth-child(14)::after, .shooting_star:nth-child(14) .skill-label { animation-delay: 4321ms; }
+
+.shooting_star:nth-child(15) { top: calc(50% + 334px); left: calc(50% - 323px); animation-delay: 6543ms; }
+.shooting_star:nth-child(15)::before, .shooting_star:nth-child(15)::after, .shooting_star:nth-child(15) .skill-label { animation-delay: 6543ms; }
+
+.shooting_star:nth-child(16) { top: calc(50% - 312px); left: calc(50% - 156px); animation-delay: 876ms;  }
+.shooting_star:nth-child(16)::before, .shooting_star:nth-child(16)::after, .shooting_star:nth-child(16) .skill-label { animation-delay: 876ms; }
+
+.shooting_star:nth-child(17) { top: calc(50% + 67px);  left: calc(50% - 489px); animation-delay: 3210ms; }
+.shooting_star:nth-child(17)::before, .shooting_star:nth-child(17)::after, .shooting_star:nth-child(17) .skill-label { animation-delay: 3210ms; }
+
+.shooting_star:nth-child(18) { top: calc(50% - 356px); left: calc(50% - 378px); animation-delay: 8765ms; }
+.shooting_star:nth-child(18)::before, .shooting_star:nth-child(18)::after, .shooting_star:nth-child(18) .skill-label { animation-delay: 8765ms; }
+
+.shooting_star:nth-child(19) { top: calc(50% + 45px);  left: calc(50% + 55px);  animation-delay: 5432ms; }
+.shooting_star:nth-child(19)::before, .shooting_star:nth-child(19)::after, .shooting_star:nth-child(19) .skill-label { animation-delay: 5432ms; }
+
+.shooting_star:nth-child(20) { top: calc(50% - 67px);  left: calc(50% - 234px); animation-delay: 2109ms; }
+.shooting_star:nth-child(20)::before, .shooting_star:nth-child(20)::after, .shooting_star:nth-child(20) .skill-label { animation-delay: 2109ms; }
+
+.shooting_star:nth-child(21) { top: calc(50% - 220px); left: calc(50% - 380px); animation-delay: 3890ms; }
+.shooting_star:nth-child(21)::before, .shooting_star:nth-child(21)::after, .shooting_star:nth-child(21) .skill-label { animation-delay: 3890ms; }
+
+.shooting_star:nth-child(22) { top: calc(50% + 290px); left: calc(50% + 45px);  animation-delay: 6234ms; }
+.shooting_star:nth-child(22)::before, .shooting_star:nth-child(22)::after, .shooting_star:nth-child(22) .skill-label { animation-delay: 6234ms; }
+
+.shooting_star:nth-child(23) { top: calc(50% - 140px); left: calc(50% - 512px); animation-delay: 1567ms; }
+.shooting_star:nth-child(23)::before, .shooting_star:nth-child(23)::after, .shooting_star:nth-child(23) .skill-label { animation-delay: 1567ms; }
+
+.shooting_star:nth-child(24) { top: calc(50% + 78px);  left: calc(50% - 167px); animation-delay: 8901ms; }
+.shooting_star:nth-child(24)::before, .shooting_star:nth-child(24)::after, .shooting_star:nth-child(24) .skill-label { animation-delay: 8901ms; }
+
+.shooting_star:nth-child(25) { top: calc(50% - 390px); left: calc(50% + 23px);  animation-delay: 4567ms; }
+.shooting_star:nth-child(25)::before, .shooting_star:nth-child(25)::after, .shooting_star:nth-child(25) .skill-label { animation-delay: 4567ms; }
+
+.shooting_star:nth-child(26) { top: calc(50% + 198px); left: calc(50% - 523px); animation-delay: 7234ms; }
+.shooting_star:nth-child(26)::before, .shooting_star:nth-child(26)::after, .shooting_star:nth-child(26) .skill-label { animation-delay: 7234ms; }
+
+.shooting_star:nth-child(27) { top: calc(50% - 267px); left: calc(50% - 89px);  animation-delay: 2345ms; }
+.shooting_star:nth-child(27)::before, .shooting_star:nth-child(27)::after, .shooting_star:nth-child(27) .skill-label { animation-delay: 2345ms; }
+
+.shooting_star:nth-child(28) { top: calc(50% + 345px); left: calc(50% - 234px); animation-delay: 5901ms; }
+.shooting_star:nth-child(28)::before, .shooting_star:nth-child(28)::after, .shooting_star:nth-child(28) .skill-label { animation-delay: 5901ms; }
+
+.shooting_star:nth-child(29) { top: calc(50% - 45px);  left: calc(50% + 112px); animation-delay: 9345ms; }
+.shooting_star:nth-child(29)::before, .shooting_star:nth-child(29)::after, .shooting_star:nth-child(29) .skill-label { animation-delay: 9345ms; }
+
+/* ──────────────────────────────────────────────────────
+   Keyframes — sizes scaled up for brightness/impact
+────────────────────────────────────────────────────── */
+@keyframes tail {
+    0%   { width: 0; }
+    30%  { width: 120px; }
+    100% { width: 0; }
+}
+
+@keyframes shining {
+    0%   { width: 0; }
+    50%  { width: 35px; }
+    100% { width: 0; }
+}
+
+@keyframes shooting {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(350px); }
+}
+
+@keyframes label-fade {
+    0%, 15%  { opacity: 0; }
+    30%, 70% { opacity: 1; }
+    85%, 100%{ opacity: 0; }
+}
+
+
+/* 3. PROJECTS — Carousel
+   Full viewport. Carousel centred vertically.
+   All items have background-image + dark overlay.
+   Adapted from: codepen.io/CreativeCoder111/pen/XWyjBab */
+#projects {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+/* Outer wrapper */
+.carousel-container {
+    position: relative;
+    width: min(1000px, 96vw);
+    height: min(520px, 72vh);
+    overflow: hidden;
+    background: rgba(13, 12, 29, 0.4);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.slide {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Every card : thumbnail size by default */
+.slide .item {
+    position: absolute;
+    top: 50%;
+    transform: translate(0, -50%);
+    width: 150px;
+    height: 230px;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    background-position: center;
+    background-size: cover;
+    display: inline-block;
+    transition: 0.5s ease;
+    overflow: hidden;
+}
+
+/* Items 1 & 2: full-size, stacked (2 is on top and featured) */
+.slide .item:nth-child(1),
+.slide .item:nth-child(2) {
+    top: 0;
+    left: 0;
+    transform: none;
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Thumbnail strip : tighter spacing to match smaller cards */
+.slide .item:nth-child(3) { left: 52%; }
+.slide .item:nth-child(4) { left: calc(52% + 165px); }
+.slide .item:nth-child(5) { left: calc(52% + 330px); }
+.slide .item:nth-child(n + 6) { left: calc(52% + 495px); opacity: 0; }
+
+/* Dark left-to-right gradient overlay on ALL items — makes
+   text readable on the featured card, looks fine on thumbnails */
+.slide .item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right,
+        rgba(13, 12, 29, 0.90) 0%,
+        rgba(13, 12, 29, 0.55) 45%,
+        rgba(13, 12, 29, 0.10) 100%);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Content — only shown on nth-child(2) */
+.item .content {
+    position: absolute;
+    top: 50%;
+    left: 80px;
+    width: 320px;
+    text-align: left;
+    color: var(--cream);
+    transform: translate(0, -50%);
+    display: none;
+    z-index: 1;
+}
+
+.slide .item:nth-child(2) .content {
+    display: block;
+}
+
+/* Tag */
+.content .tag {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.72em;
+    color: var(--lavender);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.6rem;
+    opacity: 0;
+    animation: carousel-animate 0.7s ease-out 0.1s 1 forwards;
+}
+
+/* Project title */
+.content .name {
+    font-family: 'Economica', sans-serif;
+    font-size: 2.5em;
+    font-weight: bold;
+    line-height: 1.15;
+    color: var(--cream);
+    opacity: 0;
+    animation: carousel-animate 0.7s ease-out 0.2s 1 forwards;
+}
+
+/* Description */
+.content .des {
+    margin-top: 12px;
+    margin-bottom: 20px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.82em;
+    line-height: 1.7;
+    color: var(--lavender);
+    opacity: 0;
+    animation: carousel-animate 0.7s ease-out 0.35s 1 forwards;
+}
+
+/* View Project link */
+.view-btn {
+    display: inline-block;
+    padding: 10px 22px;
+    border: 1px solid var(--cream);
+    color: var(--cream);
+    text-decoration: none;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.82em;
+    letter-spacing: 0.04em;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+    animation: carousel-animate 0.7s ease-out 0.5s 1 forwards;
+}
+
+.view-btn:hover {
+    background: var(--cream);
+    color: var(--darker-blue);
+}
+
+/* Prev / Next */
+.carousel-buttons {
+    width: 100%;
+    text-align: center;
+    position: absolute;
+    bottom: 20px;
+    z-index: 20;
+}
+
+.carousel-buttons button {
+    width: 42px;
+    height: 38px;
+    border-radius: 6px;
+    border: 1px solid rgba(166, 156, 172, 0.4);
+    background: rgba(22, 27, 51, 0.8);
+    color: var(--cream);
+    cursor: pointer;
+    margin: 0 5px;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.carousel-buttons button:hover {
+    background: var(--purple);
+    border-color: var(--lavender);
+}
+
+@keyframes carousel-animate {
+    from {
+        opacity: 0;
+        transform: translate(0, 40px);
+        filter: blur(6px);
     }
-
-    nextBtn.addEventListener('click', () => {
-        const items = document.querySelectorAll('.item');
-        slide.appendChild(items[0]);
-        triggerContentAnimation();
-    });
-
-    prevBtn.addEventListener('click', () => {
-        const items = document.querySelectorAll('.item');
-        slide.prepend(items[items.length - 1]);
-        triggerContentAnimation();
-    });
-
-    // Touch swipe: left = next, right = prev
-    let touchStartX = 0;
-
-    slide.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
-    }, { passive: true });
-
-    slide.addEventListener('touchend', (e) => {
-        const dx = e.changedTouches[0].clientX - touchStartX;
-        if (Math.abs(dx) < 40) return;
-        if (dx < 0) nextBtn.click();
-        else        prevBtn.click();
-    }, { passive: true });
+    to {
+        opacity: 1;
+        transform: translate(0, 0);
+        filter: blur(0);
+    }
 }
 
 
-/* 5.  UI : Hamburger menu */
-function initHamburger() {
-    const btn  = document.getElementById('hamburger');
-    const menu = document.getElementById('mobile-menu');
-    if (!btn || !menu) return;
+/* 4. CONTACT : icon links match the nav bar social icons.
+   height/scroll-snap-align/scroll-snap-stop inherited from section. */
+#contact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 0.5px solid rgba(166, 156, 172, 0.08);
+}
 
-    btn.addEventListener('click', () => {
-        btn.classList.toggle('open');
-        menu.classList.toggle('open');
-    });
+.contact-container {
+    text-align: center;
+}
 
-    menu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-            btn.classList.remove('open');
-            menu.classList.remove('open');
-        });
-    });
+.contact-title {
+    font-family: 'Economica', sans-serif;
+    font-size: 3.8em;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 2.5rem;
+}
+
+/* Row of logo icons — same treatment as nav social icons */
+.contact-icons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+}
+
+.contact-icon-link img {
+    width: 40px;
+    height: 40px;
+    filter: brightness(0) invert(1);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0.85;
+}
+
+.contact-icon-link:hover img {
+    transform: translateY(-4px);
+    opacity: 1;
 }
 
 
-/* 6.  NAV : Anchor links scroll inside #snap-wrap.
-   Because scroll-snap lives on the wrap div rather than
-   html/body, native href="#id" scrolls the wrong context.
-   This intercepts all hash links and scrolls the wrap
-   directly, offsetting 64px for the fixed nav bar.
-   iOS Safari ignores scroll-padding-top on overflow divs,
-   so the 64px offset is applied manually in scrollTo. */
-function initNavLinks() {
-    const wrap = document.getElementById('snap-wrap');
-    if (!wrap) return;
-
-    document.querySelectorAll('a[href^="#"]').forEach(link => {
-        link.addEventListener('click', (e) => {
-            const target = document.querySelector(link.getAttribute('href'));
-            if (!target) return;
-            e.preventDefault();
-            wrap.scrollTo({ top: target.offsetTop - 64, behavior: 'smooth' });
-        });
-    });
+/* RESPONSIVE — tablet */
+@media (max-width: 1024px) {
+    .carousel-container { height: min(480px, 65vh); }
+    .content .name { font-size: 2em; }
 }
 
 
-/* 7.  INDICATOR : Update right-side dot nav on scroll.
-   Uses IntersectionObserver on each section — when a section
-   is more than 50% visible inside #snap-wrap, its dot becomes
-   active. Threshold 0.5 means the dot switches exactly when
-   the section is the dominant one on screen. */
-function initPageIndicator() {
-    const dots     = document.querySelectorAll('.indicator-dot');
-    const sections = document.querySelectorAll('section');
-    const wrap     = document.getElementById('snap-wrap');
-    if (!dots.length || !sections.length || !wrap) return;
+/* RESPONSIVE — mobile */
+@media (max-width: 768px) {
+    .nav-links    { display: none; }
+    .social-icons { display: none; }
+    .hamburger    { display: flex; }
+    #main-nav     { padding: 0 20px; }
 
-    const observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    /* Remove active from all dots, add to matching one */
-                    dots.forEach(d => d.classList.remove('active'));
-                    const dot = document.querySelector(`.indicator-dot[data-section="${entry.target.id}"]`);
-                    if (dot) dot.classList.add('active');
-                }
-            });
-        },
-        {
-            root:      wrap,   /* observe relative to the snap container */
-            threshold: 0.5     /* trigger when section is 50%+ visible */
-        }
-    );
+    .intro h1    { font-size: 2.2em; }
+    .intro p     { font-size: 1em; }
 
-    sections.forEach(s => observer.observe(s));
+    /* PFP slightly smaller on mobile but keeps 3:4 ratio */
+    .profile-pic { width: 150px; height: 200px; }
+
+    .skills-overlay-title { font-size: 2em; }
+
+    /* Skill labels: reduce size at tablet to avoid clipping */
+    .skill-label { font-size: 9px; top: -16px; }
+
+    /* Page indicator : move closer to edge on mobile */
+    .page-indicator { right: 12px; }
+
+    .carousel-container { height: min(440px, 62vh); }
+
+    /* Thumbnail size on mobile */
+    .slide .item { width: 120px; height: 190px; }
+
+    /* Thumbnail positions on mobile — no need to repeat width/height */
+    .slide .item:nth-child(3) { left: 55%; }
+    .slide .item:nth-child(4) { left: calc(55% + 130px); }
+    .slide .item:nth-child(5) { left: calc(55% + 260px); opacity: 0; }
+
+    .item .content { left: 24px; width: calc(52% - 24px); }
+    .content .name { font-size: 1.6em; }
+
+    .contact-title  { font-size: 2.8em; }
+    .section-title  { font-size: 2em; }
+    .contact-icon-link img { width: 32px; height: 32px; }
 }
-
-
-/* 8.  INIT */
-window.addEventListener('load', () => {
-    initNameInteraction();
-    initCarousel();
-    initHamburger();
-    initNavLinks();
-    initPageIndicator();
-    typingTimer = setTimeout(typeText, 1000);
-});
-
-window.addEventListener('unload', () => {
-    if (typingTimer) clearTimeout(typingTimer);
-});
