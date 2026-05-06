@@ -412,7 +412,9 @@ function initHamburger() {
    Because scroll-snap lives on the wrap div rather than
    html/body, native href="#id" scrolls the wrong context.
    This intercepts all hash links and scrolls the wrap
-   directly, offsetting 64px for the fixed nav bar. */
+   directly, offsetting 64px for the fixed nav bar.
+   iOS Safari ignores scroll-padding-top on overflow divs,
+   so the 64px offset is applied manually in scrollTo. */
 function initNavLinks() {
     const wrap = document.getElementById('snap-wrap');
     if (!wrap) return;
